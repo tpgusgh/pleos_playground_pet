@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.pleosplayground.drivequest.core.Scenario
 import com.pleosplayground.drivequest.core.UxState
 import com.pleosplayground.drivequest.core.canPlay
+import java.util.Locale
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -39,7 +40,7 @@ fun GameScreen(vm: GameViewModel) {
     val playable = canPlay(ux)
 
     Column(
-        Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).padding(16.dp),
+        Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text("Drive Quest", style = MaterialTheme.typography.headlineMedium)
@@ -68,7 +69,7 @@ fun GameScreen(vm: GameViewModel) {
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp)) {
                     Text("지난 주행", style = MaterialTheme.typography.titleSmall)
-                    Text("경험치 ${s.xp}  골드 ${s.gold}  거리 ${"%.1f".format(s.km)}km")
+                    Text("경험치 ${s.xp}  골드 ${s.gold}  거리 ${"%.1f".format(Locale.US, s.km)}km")
                     Text("급제동 ${s.hardBrakes}  부드러운 제동 ${s.smoothBrakes}  급조향 ${s.sharpSteers}  콤보 ${s.bestCombo}")
                     if (s.flags.isNotEmpty()) Text(s.flags.joinToString(" "))
                 }

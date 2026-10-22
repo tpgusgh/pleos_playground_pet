@@ -16,8 +16,8 @@ class Speaker(context: Context) : Narrator {
     init {
         tts = TextToSpeech(context.applicationContext) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                tts?.language = Locale.KOREAN
-                ready = true
+                val result = tts?.setLanguage(Locale.KOREAN)
+                ready = result != TextToSpeech.LANG_MISSING_DATA && result != TextToSpeech.LANG_NOT_SUPPORTED
             }
         }
     }
