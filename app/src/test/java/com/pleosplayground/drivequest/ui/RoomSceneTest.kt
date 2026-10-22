@@ -4,7 +4,7 @@ import org.junit.Test
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 
-class TamaDeviceTest {
+class RoomSceneTest {
     @Test fun hearts_null_stays_null() = assertNull(heartsFor(null))
 
     @Test fun hearts_round_up_in_quarters() {

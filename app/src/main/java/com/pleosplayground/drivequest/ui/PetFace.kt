@@ -2,9 +2,11 @@ package com.pleosplayground.drivequest.ui
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -13,18 +15,16 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
-import androidx.compose.ui.graphics.drawscope.translate
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import com.pleosplayground.drivequest.core.Face
 
-private val Mint = Color(0xFF8FE3C8)
-private val MintDark = Color(0xFF75D0B4)
-private val Ink = Color(0xFF2B2F44)
-private val Cheek = Color(0xFFFF9FB8)
+private val Mint = Color(0xFFBFEEDD)
+private val EarFill = Color(0xFFA8E3CC)
+private val Cheek = Color(0xFFFFC9D6)
+private const val W = 3f // outline width in design units
 
-// Drawn in the mockup's 150x112 design units (130x104 car plus margin for ears), scaled to fit the canvas.
+// Drawn in 150x146 design units (130x96 body, ears above, wheels below), scaled to fit the canvas.
 @Composable
 fun PetFace(face: Face, modifier: Modifier = Modifier) {
     val desc = when (face) {
@@ -32,67 +32,66 @@ fun PetFace(face: Face, modifier: Modifier = Modifier) {
         Face.SULKY -> "시무룩한 차 캐릭터"
         Face.HUNGRY -> "배고픈 차 캐릭터"
     }
-    Canvas(modifier.aspectRatio(150f / 112f).semantics { contentDescription = desc }) {
-        scale(size.width / 150f, pivot = Offset.Zero) { translate(10f, 10f) { drawCar(face) } }
+    Canvas(modifier.aspectRatio(150f / 146f).semantics { contentDescription = desc }) {
+        scale(size.width / 150f, pivot = Offset.Zero) { drawCar(face) }
     }
 }
 
 private fun DrawScope.drawCar(face: Face) {
     val sulky = face == Face.SULKY
-    // ears (side mirrors), hinged at their base
-    val earTilt = if (sulky) 50f else 12f
-    ear(20f, -earTilt)
-    ear(90f, earTilt)
-    // body
+    val outline = Stroke(W)
+    val round = Stroke(W, cap = StrokeCap.Round)
+    // ears stand up; they flop sideways when sulky
+    val tilt = if (sulky) 62f else 22f
+    ear(30f, -tilt)
+    ear(94f, tilt)
     val body = Path().apply {
         addRoundRect(
-            androidx.compose.ui.geometry.RoundRect(
-                0f, 14f, 130f, 94f,
-                CornerRadius(60f, 37f), CornerRadius(60f, 37f), CornerRadius(42f, 26f), CornerRadius(42f, 26f),
+            RoundRect(
+                10f, 32f, 140f, 128f,
+                CornerRadius(62f, 46f), CornerRadius(62f, 46f), CornerRadius(49f, 36f), CornerRadius(49f, 36f),
             ),
         )
     }
     drawPath(body, Mint)
-    drawRoundRect(MintDark, Offset(14f, 85f), Size(102f, 9f), CornerRadius(4f))
-    // eyes
-    for (x in listOf(26f, 74f)) {
-        drawOval(Color.White, Offset(x, 30f), Size(30f, 38f))
-        val py = if (sulky) 44f else 38f
-        drawOval(Ink, Offset(x + 7f, py), Size(17f, 21f))
-        drawCircle(Color.White, 3.5f, Offset(x + 13f, py + 6f))
-        drawCircle(Color.White, 2f, Offset(x + 20f, py + 14f))
-    }
+    drawPath(body, Line, style = outline)
+    // eyes: small dots, set a little lower when sulky
+    val ey = if (sulky) 74f else 68f
+    drawOval(Line, Offset(48f, ey), Size(9f, 11f))
+    drawOval(Line, Offset(93f, ey), Size(9f, 11f))
     if (sulky) {
-        // brows droop outward
-        drawLine(Ink, Offset(23f, 33f), Offset(53f, 26f), 5f, StrokeCap.Round)
-        drawLine(Ink, Offset(107f, 33f), Offset(77f, 26f), 5f, StrokeCap.Round)
+        drawLine(Line, Offset(43f, 66f), Offset(59f, 61f), W, StrokeCap.Round)
+        drawLine(Line, Offset(107f, 66f), Offset(91f, 61f), W, StrokeCap.Round)
     }
-    // cheeks
-    val ca = if (sulky) 0.25f else 0.85f
-    drawOval(Cheek.copy(alpha = ca), Offset(12f, 68f), Size(17f, 9f))
-    drawOval(Cheek.copy(alpha = ca), Offset(101f, 68f), Size(17f, 9f))
-    // mouth
-    val line = Stroke(3f, cap = StrokeCap.Round)
+    // blush
+    drawOval(Cheek.copy(alpha = 0.8f), Offset(32f, 86f), Size(16f, 9f))
+    drawOval(Cheek.copy(alpha = 0.8f), Offset(102f, 86f), Size(16f, 9f))
     when (face) {
-        Face.HAPPY -> drawArc(Ink, 0f, 180f, false, Offset(50f, 66f), Size(30f, 20f), style = line)
-        Face.SULKY -> drawArc(Ink, 180f, 180f, false, Offset(53f, 80f), Size(24f, 14f), style = line)
+        Face.HAPPY -> drawArc(Line, 0f, 180f, false, Offset(65f, 82f), Size(20f, 14f), style = round)
+        Face.SULKY -> drawArc(Line, 180f, 180f, false, Offset(67f, 94f), Size(16f, 9f), style = round)
         Face.HUNGRY -> {
-            drawOval(Color(0xFFE56B7F), Offset(56f, 72f), Size(18f, 19f))
-            drawOval(Ink, Offset(56f, 72f), Size(18f, 19f), style = line)
+            drawOval(Color(0xFFFF9FB0), Offset(66f, 86f), Size(18f, 16f))
+            drawOval(Line, Offset(66f, 86f), Size(18f, 16f), style = outline)
             // sweat drop
-            drawCircle(Color(0xFF6EC6FF), 5f, Offset(118f, 40f))
-            drawPath(Path().apply { moveTo(118f, 28f); lineTo(113.5f, 38f); lineTo(122.5f, 38f); close() }, Color(0xFF6EC6FF))
+            val drop = Path().apply {
+                moveTo(128f, 44f); cubicTo(132f, 51f, 135f, 54f, 135f, 58f)
+                cubicTo(135f, 62f, 131f, 65f, 128f, 65f); cubicTo(125f, 65f, 121f, 62f, 121f, 58f)
+                cubicTo(121f, 54f, 124f, 51f, 128f, 44f); close()
+            }
+            drawPath(drop, Color(0xFFBFE6FF))
+            drawPath(drop, Line, style = Stroke(2f))
         }
     }
-    // wheels
-    for (x in listOf(18f, 86f)) {
-        drawCircle(Ink, 13f, Offset(x + 13f, 91f))
-        drawCircle(Color(0xFF9AA3BD), 11f, Offset(x + 13f, 91f), style = Stroke(4f))
+    // wheels: white with the same outline
+    for (cx in listOf(42f, 108f)) {
+        drawCircle(Color.White, 12f, Offset(cx, 128f))
+        drawCircle(Line, 12f, Offset(cx, 128f), style = outline)
     }
 }
 
 private fun DrawScope.ear(x: Float, deg: Float) {
-    rotate(deg, Offset(x + 10f, 38f)) {
-        drawRoundRect(MintDark, Offset(x, -6f), Size(20f, 44f), CornerRadius(10f, 22f))
+    rotate(deg, Offset(x + 13f, 58f)) {
+        drawOval(EarFill, Offset(x, 12f), Size(26f, 44f))
+        drawOval(Line, Offset(x, 12f), Size(26f, 44f), style = Stroke(W))
     }
 }

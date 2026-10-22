@@ -27,10 +27,16 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge(statusBarStyle = androidx.activity.SystemBarStyle.dark(android.graphics.Color.TRANSPARENT))
+        enableEdgeToEdge(statusBarStyle = androidx.activity.SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT))
         setContent {
-            MaterialTheme(colorScheme = androidx.compose.material3.darkColorScheme()) {
-                Surface(color = androidx.compose.ui.graphics.Color(0xFF1D2333)) { PetScreen(vm) }
+            MaterialTheme(colorScheme = androidx.compose.material3.lightColorScheme(
+                primary = androidx.compose.ui.graphics.Color(0xFF6B5648),
+                secondaryContainer = androidx.compose.ui.graphics.Color(0xFFFFC9D6),
+                onSecondaryContainer = androidx.compose.ui.graphics.Color(0xFF6B5648),
+                surfaceVariant = androidx.compose.ui.graphics.Color(0xFFF1CF9F),
+                outline = androidx.compose.ui.graphics.Color(0xFF6B5648),
+            )) {
+                Surface(color = androidx.compose.ui.graphics.Color(0xFFFFF1D6)) { PetScreen(vm) }
             }
         }
     }
