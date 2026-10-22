@@ -3,11 +3,33 @@ package com.pleosplayground.drivequest.ui
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.material3.Text
+import androidx.activity.viewModels
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.pleosplayground.drivequest.core.FakeSignalSource
+import com.pleosplayground.drivequest.data.PetStore
 
 class MainActivity : ComponentActivity() {
+    private val vm: PetViewModel by viewModels {
+        viewModelFactory {
+            initializer {
+                PetViewModel(
+                    FakeSignalSource(tickDelayMs = 150),
+                    PetStore(applicationContext),
+                    Speaker(applicationContext),
+                )
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { Text("차 타마고치") }
+        setContent {
+            MaterialTheme {
+                Surface { PetScreen(vm) }
+            }
+        }
     }
 }
