@@ -2,6 +2,7 @@ package com.pleosplayground.drivequest.core
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -23,6 +24,29 @@ class PetStateTest {
 
     @Test fun clock_going_backwards_does_not_decay() {
         assertEquals(70, PetState(70, 5_000_000).settle(1_000).mood)
+    }
+
+    @Test fun future_ready_time_beyond_one_cooldown_is_treated_as_stale() {
+        assertEquals(60, PetState(50, 1_000, 9_999_999_999_999, 0).pet(2_000).mood)
+        val r = PetState(50, 1_000, 0, 9_999_999_999_999).talk(2_000, Face.HAPPY)
+        assertEquals(greeting(Face.HAPPY), r.reply)
+        assertEquals(55, r.state.mood)
+        assertEquals(60, PetState(50, 1_000, Long.MAX_VALUE, 0).pet(2_000).mood)
+    }
+
+    @Test fun ready_time_inside_one_cooldown_still_blocks() {
+        val s = PetState(50, 1_000, 6_000, 0)
+        assertEquals(s, s.pet(2_000))
+        assertNotNull(PetState(50, 1_000, 0, 7_000).talk(7_000, Face.HAPPY).reply)
+    }
+
+    @Test fun clock_rewind_then_correction_does_not_wipe_mood() {
+        val original = PetState(70, 5_000_000)
+        val rewound = original.settle(1_000)
+        assertEquals(original, rewound)
+        val corrected = rewound.settle(5_000_000 + 1_800_000)
+        assertEquals(69, corrected.mood)
+        assertEquals(6_800_000, corrected.settledAtMs)
     }
 
     @Test fun frequent_settles_do_not_lose_decay() {

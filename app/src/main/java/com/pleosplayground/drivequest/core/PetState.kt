@@ -13,7 +13,8 @@ data class PetState(
 data class TalkResult(val state: PetState, val reply: String?)
 
 fun PetState.settle(nowMs: Long): PetState {
-    if (settledAtMs <= 0 || nowMs <= settledAtMs) return copy(settledAtMs = nowMs)
+    if (settledAtMs <= 0) return copy(settledAtMs = nowMs)
+    if (nowMs <= settledAtMs) return this // 시계가 되감겨도 나중 기준점 유지
     val points = (nowMs - settledAtMs) / DECAY_STEP_MS
     return copy(
         mood = (mood - points).coerceAtLeast(0).toInt(),
@@ -21,17 +22,21 @@ fun PetState.settle(nowMs: Long): PetState {
     )
 }
 
+// 쿨다운 1회분보다 먼 미래의 readyAt은 시계 오류로 보고 무시
+private fun isCoolingDown(readyAtMs: Long, nowMs: Long) =
+    readyAtMs > nowMs && readyAtMs - nowMs <= COOLDOWN_MS
+
 fun PetState.applyDriving(delta: Int, nowMs: Long): PetState =
     settle(nowMs).let { it.copy(mood = (it.mood + delta).coerceIn(0, 100)) }
 
 fun PetState.pet(nowMs: Long): PetState {
-    if (nowMs < petReadyAtMs) return this
+    if (isCoolingDown(petReadyAtMs, nowMs)) return this
     val s = settle(nowMs)
     return s.copy(mood = (s.mood + 10).coerceIn(0, 100), petReadyAtMs = nowMs + COOLDOWN_MS)
 }
 
 fun PetState.talk(nowMs: Long, face: Face): TalkResult {
-    if (nowMs < talkReadyAtMs) return TalkResult(this, null)
+    if (isCoolingDown(talkReadyAtMs, nowMs)) return TalkResult(this, null)
     val s = settle(nowMs)
     return TalkResult(
         s.copy(mood = (s.mood + 5).coerceIn(0, 100), talkReadyAtMs = nowMs + COOLDOWN_MS),
