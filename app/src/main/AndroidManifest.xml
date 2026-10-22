@@ -6,7 +6,7 @@
         </intent>
     </queries>
     <application
-        android:label="Drive Quest"
+        android:label="차 타마고치"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
         <activity android:name=".ui.MainActivity" android:exported="true">
             <intent-filter>
