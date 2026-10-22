@@ -2,6 +2,7 @@ package com.pleosplayground.drivequest.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.drawBehind
@@ -54,14 +55,17 @@ fun PetScreen(vm: PetViewModel) {
     var style by remember { mutableStateOf(DriveStyle.SMOOTH) }
 
     NightBackground {
+      BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding()) {
+        val landscape = maxWidth > maxHeight
         Column(
-            Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(if (landscape) 8.dp else 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             TamaDevice(
                 face, line, food, health, pet.mood, parked, vm::petIt, vm::talk,
-                Modifier.widthIn(max = 340.dp).fillMaxWidth(),
+                Modifier.widthIn(max = if (landscape) 560.dp else 340.dp).fillMaxWidth(),
+                compact = landscape,
             )
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(if (parked) "정차" else "주행 중", color = Ink, fontWeight = FontWeight.Bold)
@@ -99,6 +103,7 @@ fun PetScreen(vm: PetViewModel) {
                 }
             }
         }
+      }
     }
 }
 

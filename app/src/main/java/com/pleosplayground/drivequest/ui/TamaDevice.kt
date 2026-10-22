@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -52,29 +53,42 @@ fun TamaDevice(
     parked: Boolean,
     onPet: () -> Unit, onTalk: () -> Unit,
     modifier: Modifier = Modifier,
+    compact: Boolean = false, // landscape: LCD and buttons side by side so the device fits the height
 ) {
-    Column(
-        modifier
-            .shadow(14.dp, RoundedCornerShape(topStartPercent = 40, topEndPercent = 40, bottomStartPercent = 30, bottomEndPercent = 30))
-            .clip(RoundedCornerShape(topStartPercent = 40, topEndPercent = 40, bottomStartPercent = 30, bottomEndPercent = 30))
-            .background(Brush.verticalGradient(listOf(ShellTop, ShellBottom)))
-            .padding(horizontal = 26.dp)
-            .padding(top = 62.dp, bottom = 30.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Lcd(face, line, food, health, mood)
-        Row(Modifier.padding(top = 20.dp), horizontalArrangement = Arrangement.spacedBy(28.dp)) {
-            RoundButton("💬", "말 걸기", onTalk)
-            if (parked) RoundButton("🤚", "쓰다듬기", onPet)
+    val shape = if (compact) RoundedCornerShape(40.dp)
+    else RoundedCornerShape(topStartPercent = 40, topEndPercent = 40, bottomStartPercent = 30, bottomEndPercent = 30)
+    val buttons = @Composable {
+        RoundButton("💬", "말 걸기", onTalk)
+        if (parked) RoundButton("🤚", "쓰다듬기", onPet)
+    }
+    val base = modifier
+        .shadow(14.dp, shape)
+        .clip(shape)
+        .background(Brush.verticalGradient(listOf(ShellTop, ShellBottom)))
+    if (compact) {
+        Row(base.padding(horizontal = 28.dp, vertical = 18.dp), verticalAlignment = Alignment.CenterVertically) {
+            Lcd(face, line, food, health, mood, parked, true, Modifier.weight(1f))
+            Row(Modifier.padding(start = 24.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) { buttons() }
+        }
+    } else {
+        Column(
+            base.padding(horizontal = 26.dp).padding(top = 62.dp, bottom = 30.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Lcd(face, line, food, health, mood, parked, false)
+            Row(Modifier.padding(top = 20.dp), horizontalArrangement = Arrangement.spacedBy(28.dp)) { buttons() }
         }
     }
 }
 
 @Composable
-private fun Lcd(face: Face, line: String?, food: Int?, health: Int?, mood: Int) {
+private fun Lcd(
+    face: Face, line: String?, food: Int?, health: Int?, mood: Int,
+    parked: Boolean, compact: Boolean, modifier: Modifier = Modifier,
+) {
     val shape = RoundedCornerShape(26.dp)
     Column(
-        Modifier
+        modifier
             .fillMaxWidth()
             .clip(shape)
             .background(LcdColor)
@@ -83,16 +97,19 @@ private fun Lcd(face: Face, line: String?, food: Int?, health: Int?, mood: Int) 
             .padding(horizontal = 14.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            StatusIcon("🍙", "밥", food)
-            StatusIcon("🩺", "건강", health)
-            StatusIcon("😊", "기분", mood)
+        // Driving (restricted): only the face and one voice line, per the spec.
+        if (parked) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                StatusIcon("🍙", "밥", food)
+                StatusIcon("🩺", "건강", health)
+                StatusIcon("😊", "기분", mood)
+            }
         }
-        PetFace(face, Modifier.padding(vertical = 8.dp).fillMaxWidth(0.8f))
+        PetFace(face, (if (compact) Modifier.height(96.dp) else Modifier.fillMaxWidth(0.8f)).padding(vertical = 8.dp))
         Box(
             Modifier
                 .fillMaxWidth()
-                .heightIn(min = 56.dp)
+                .heightIn(min = if (compact) 44.dp else 56.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(Color.White.copy(alpha = 0.75f))
                 .border(2.dp, LcdEdge.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
