@@ -15,6 +15,8 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import com.pleosplayground.drivequest.core.Face
 
 private val Mint = Color(0xFF8FE3C8)
@@ -25,7 +27,12 @@ private val Cheek = Color(0xFFFF9FB8)
 // Drawn in the mockup's 150x112 design units (130x104 car plus margin for ears), scaled to fit the canvas.
 @Composable
 fun PetFace(face: Face, modifier: Modifier = Modifier) {
-    Canvas(modifier.aspectRatio(150f / 112f)) {
+    val desc = when (face) {
+        Face.HAPPY -> "행복한 차 캐릭터"
+        Face.SULKY -> "시무룩한 차 캐릭터"
+        Face.HUNGRY -> "배고픈 차 캐릭터"
+    }
+    Canvas(modifier.aspectRatio(150f / 112f).semantics { contentDescription = desc }) {
         scale(size.width / 150f, pivot = Offset.Zero) { translate(10f, 10f) { drawCar(face) } }
     }
 }

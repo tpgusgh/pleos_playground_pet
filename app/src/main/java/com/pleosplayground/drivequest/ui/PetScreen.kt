@@ -44,7 +44,6 @@ fun PetScreen(vm: PetViewModel) {
     val pet by vm.pet.collectAsState()
     val parked = canPlay(ux)
     var style by remember { mutableStateOf(DriveStyle.SMOOTH) }
-    var fuel by remember { mutableStateOf(80f) }
 
     Column(
         Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(16.dp),
@@ -71,10 +70,12 @@ fun PetScreen(vm: PetViewModel) {
                     FilterChip(selected = false, onClick = { vm.applyPreset(p) }, label = { Text(p.name) })
                 }
             }
-            Text("연료 ${fuel.toInt()}%")
+            // food mirrors fuelPercent 1:1, so the slider has no state of its own.
+            Text(if (food == null) "연료 없음" else "연료 $food%")
             Slider(
-                value = fuel,
-                onValueChange = { fuel = it; vm.setFuel(it.toInt()) },
+                value = food?.toFloat() ?: 0f,
+                enabled = food != null,
+                onValueChange = { vm.setFuel(it.toInt()) },
                 valueRange = 0f..100f,
                 modifier = Modifier.fillMaxWidth(),
             )
