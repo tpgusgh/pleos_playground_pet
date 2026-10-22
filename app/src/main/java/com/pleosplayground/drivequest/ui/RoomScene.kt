@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -30,7 +31,9 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pleosplayground.drivequest.core.Face
@@ -47,6 +50,8 @@ private val Yellow = Color(0xFFFFE8A3)
 private val Pink = Color(0xFFFFC9D6)
 private val HeartOn = Color(0xFFFF8FA8)
 private val HeartOff = Color(0xFFE8D5D0)
+private val BubbleBreak = LineBreak(LineBreak.Strategy.Balanced, LineBreak.Strictness.Strict, LineBreak.WordBreak.Phrase)
+private val SignReserve = 126.dp // wall sign width + its 14dp inset + a small gap
 
 /** Filled hearts out of 4 (ceil(value/25), clamped); null when the gauge is unavailable. */
 fun heartsFor(value: Int?): Int? = value?.let { (it.coerceIn(0, 100) + 24) / 25 }
@@ -64,14 +69,16 @@ fun RoomScene(
     val shape = RoundedCornerShape(28.dp)
     BoxWithConstraints(modifier.clip(shape).roomBackdrop().border(3.dp, Line, shape)) {
         val wide = maxWidth > maxHeight
-        val petH = maxHeight * 0.40f
-        // Pet sits on the rug: its wheels end a bit below the rug's centre line.
+        val petH = maxHeight * 0.48f
+        // The bubble stays in the centre column so it clears the window (left) and the wall sign (right).
+        val bubbleMax = maxWidth - SignReserve * 2
+        // Pet sits on the rug: its ground shadow (7% above the canvas bottom) lands on the rug's centre line.
         Column(
-            Modifier.align(Alignment.BottomCenter).padding(bottom = maxHeight * 0.255f)
+            Modifier.align(Alignment.BottomCenter).padding(bottom = maxHeight * 0.216f)
                 .widthIn(max = maxWidth * 0.7f),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Bubble(line)
+            Bubble(line, bubbleMax)
             PetFace(face, Modifier.height(petH))
         }
         if (parked) {
@@ -133,16 +140,19 @@ private fun Modifier.roomBackdrop(): Modifier = drawBehind {
 }
 
 @Composable
-private fun Bubble(line: String?) {
+private fun Bubble(line: String?, maxWidth: Dp) {
     if (line.isNullOrEmpty()) return
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             line,
             Modifier
+                .widthIn(max = maxWidth.coerceAtLeast(120.dp))
                 .background(Color.White, RoundedCornerShape(18.dp))
                 .border(3.dp, Line, RoundedCornerShape(18.dp))
                 .padding(horizontal = 14.dp, vertical = 6.dp),
             color = Line, fontSize = 15.sp, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center,
+            // wrap Korean at spaces, not mid-word (phrase breaking needs API 33+; older devices wrap per syllable)
+            style = LocalTextStyle.current.copy(lineBreak = BubbleBreak),
         )
         // tail pointing down at the pet
         Box(
