@@ -26,6 +26,6 @@ fun Hero.encode(): String = "$level,$xp,$hp,$atk,$def,$agi"
 
 fun decodeHero(raw: String?): Hero {
     val v = raw?.split(',')?.map { it.toIntOrNull() }
-    if (v == null || v.size != 6 || v.any { it == null || it < 0 } || v[0] == 0) return Hero()
+    if (v == null || v.size != 6 || v.any { it == null || it < 0 } || v[0] == 0 || v[2] == 0) return Hero()
     return Hero(v[0]!!, v[1]!!, v[2]!!, v[3]!!, v[4]!!, v[5]!!)
 }

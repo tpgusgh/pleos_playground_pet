@@ -34,7 +34,7 @@ fun score(samples: List<Sample>): TripScore {
     var tire = false
 
     for (s in samples) {
-        s.odometerKm?.takeUnless { it.isNaN() }?.let { v ->
+        s.odometerKm?.takeIf { it.isFinite() }?.let { v ->
             lastOdo?.let { prev -> if (v > prev) km += v - prev }
             lastOdo = v
         }

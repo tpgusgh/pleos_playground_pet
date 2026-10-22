@@ -41,4 +41,7 @@ class HeroTest {
             assertEquals(Hero(), decodeHero(raw))
         }
     }
+
+    @Test
+    fun decode_rejects_zero_hp() = assertEquals(Hero(), decodeHero("3,40,0,14,7,7"))
 }

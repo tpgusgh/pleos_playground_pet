@@ -95,4 +95,10 @@ class DriveScorerTest {
         assertEquals(0, s.xp)
         assertEquals(5, s.gold)
     }
+
+    @Test
+    fun infinite_odometer_is_ignored() {
+        val s = score(odo(0f, Float.POSITIVE_INFINITY, 5f))
+        assertEquals(5f, s.km, 0.001f)
+    }
 }
