@@ -322,3 +322,39 @@ fun heartsFor(value: Int?): Int?   // null이면 null, 아니면 ceil(value/25)�
 - [ ] **Step 4: `PetScreen` 재구성.** `TamaDevice`를 화면 중앙에 두고, 기존 숫자 막대 게이지를 없앤다(숫자 기분 값은 개발자 도구에 작게 표시). 개발용 컨트롤(프리셋 칩, 연료 슬라이더, 주행 스타일 칩과 "주행 시작", 정차 스위치)은 기기 아래 "개발자 도구" 영역으로 옮긴다. 주행 제한 모드에서는 기기(얼굴, 말풍선, 말 걸기 버튼)와 정차 스위치만 보인다. 정차 스위치의 라벨은 켜짐 "정차", 꺼짐 "주행 중"처럼 상태가 분명하게 읽히게 한다. 기존 동작(쓰다듬기는 정차에서만, 말 걸기는 항상, 슬라이더는 `food`와 동기화)은 그대로 유지한다. `ponytail:` 주석도 유지한다.
 - [ ] **Step 5: 확인.** `./gradlew testDebugUnitTest assembleDebug` 전체 PASS. 에뮬레이터에서 스크린샷으로 확인: ① 흰 배경이 사라지고 남색 배경에 기기가 보인다 ② 행복·배고픔·시무룩 표정이 LCD 위에서 잘 보인다 ③ 하트 칸이 값과 맞는다(LOW_FUEL이면 밥 1칸, UNSUPPORTED면 밥·건강 아이콘 숨김) ④ 주행 제한 모드에는 쓰다듬기 버튼과 개발자 도구가 없다 ⑤ 정차 모드에는 쓰다듬기와 개발자 도구가 있고 쓰다듬기가 동작한다 ⑥ 앱 재시작 후에도 상태 유지. 보지 못한 항목은 그대로 보고한다.
 - [ ] **Step 6: 커밋.** `git add -A && git commit -m "feat: 화면을 다마고치 기기 스타일로 개선"`
+
+> Task 6의 알 모양 기기 겉모습은 사용자가 거절해 Task 7이 대체한다. 주행 중 하트 줄 숨김과 가로 화면 맞춤 같은 동작 요구는 유지한다.
+
+---
+
+### Task 7: "포근한 내 방" 스타일로 화면 교체
+
+사용자가 "B. 포근한 내 방"(치이카와 포켓 홈 화면 느낌)을 골라서 추가된 Task. 로직은 건드리지 않고 겉모습만 바꾼다. 스펙의 "화면 스타일" 절과 목업 `docs/superpowers/specs/assets/chiikawa-room-mockup.html`의 B안을 따른다.
+
+**Files:**
+- Create: `SRC/ui/RoomScene.kt` (`heartsFor`를 `TamaDevice.kt`에서 옮겨 온다)
+- Delete: `SRC/ui/TamaDevice.kt`
+- Rename: `TEST/ui/TamaDeviceTest.kt` → `TEST/ui/RoomSceneTest.kt` (`git mv`, 테스트 내용은 그대로, 클래스 이름만 바꿈)
+- Modify: `SRC/ui/PetScreen.kt`, `SRC/ui/PetFace.kt`(치이카와풍으로 다시 그림), 필요하면 `SRC/ui/MainActivity.kt`(시스템 바 색)
+
+**Interfaces:**
+- Consumes: `PetViewModel`의 `pet`, `food`, `health`, `face`, `ux`, `line`, `petIt()`, `talk()` (Task 4), `canPlay`
+- Produces:
+```kotlin
+@Composable fun RoomScene(
+    face: Face, line: String?,
+    food: Int?, health: Int?,
+    parked: Boolean,
+    onPet: () -> Unit, onTalk: () -> Unit,
+    modifier: Modifier = Modifier,
+)
+fun heartsFor(value: Int?): Int?   // 기존과 동일, 같은 테스트 통과
+@Composable fun PetFace(face: Face, modifier: Modifier = Modifier)   // 시그니처 유지, 그림만 바뀜
+```
+
+- [ ] **Step 1: `heartsFor` 이동.** `heartsFor`를 `RoomScene.kt`로 옮기고 테스트 파일을 `RoomSceneTest.kt`로 `git mv` 한다. `./gradlew testDebugUnitTest --tests "*RoomSceneTest*"`가 이동 전과 같은 케이스로 통과해야 한다(이동만 하므로 새 실패 테스트는 없다).
+- [ ] **Step 2: `PetFace`를 치이카와풍으로 다시 그린다.** 몸통 민트(#bfeedd), 얇은 갈색 외곽선(#6b5648, 약 3dp 비율), 위로 솟은 귀(시무룩이면 옆으로 처짐), 작은 점 눈, 옅은 분홍 볼터치, 작은 입, 흰 바퀴 두 개(외곽선). 표정: 행복(웃는 입), 시무룩(눈썹이 처지고 입꼬리 내림), 배고픔(입 벌림과 땀방울). 한국어 `contentDescription`과 시그니처는 유지한다.
+- [ ] **Step 3: `RoomScene`.** 스펙 "화면 스타일"대로 그린다: 점무늬 크림 벽, 하늘색 창문, 나무 바닥, 분홍 러그, 러그 위의 `PetFace`, 캐릭터 위 말풍선(`line`, 없으면 비움), 벽 표지판(하트 4칸 `heartsFor`, 밥·건강·기분 아이콘, `parked`일 때만, `null` 항목 줄 숨김, "밥 3/4칸" 접근성 설명), 둥근 알약 버튼(`말 걸기` 항상, `쓰다듬기` `parked`일 때만, 터치 영역 48dp 이상). 외부 이미지·폰트·의존성 추가 금지, Canvas와 Compose 도형만 쓴다.
+- [ ] **Step 4: `PetScreen` 재구성.** `TamaDevice` 자리에 `RoomScene`을 쓰고, 어두운 남색 배경과 별 점 패턴은 없앤다(화면 전체가 방이다). 개발자 도구와 정차 스위치는 방 아래에 두고 크림색 계열 카드로 맞춘다. 기존 동작(쓰다듬기 정차 전용, 말 걸기 항상, 슬라이더는 `food`와 동기화, 주행 제한 모드에서 하트 표지판·쓰다듬기·개발자 도구 숨김, `ponytail:` 주석)은 그대로 유지한다. 가로 화면에서는 주행 제한 모드의 방 전체와 말 걸기 버튼, 정차 스위치가 스크롤 없이 보이게 한다(2400x1080 에뮬레이터 기준 높이 약 360dp). 세로는 방이 화면 위쪽을 채우고 버튼과 개발자 도구가 아래에 온다. 시스템 바 아이콘 대비가 읽히게 한다.
+- [ ] **Step 5: 확인.** `./gradlew testDebugUnitTest assembleDebug` 전체 PASS. 에뮬레이터 스크린샷으로 확인: ① 흰 배경과 알 모양 기기가 사라지고 방이 보인다 ② 행복·배고픔·시무룩 표정이 러그 위에서 잘 보이고 외곽선 스타일이 방과 어울린다 ③ 정차 모드에서 벽 표지판 하트가 값과 맞는다(LOW_FUEL이면 밥 1칸, UNSUPPORTED면 밥·건강 줄 숨김) ④ 주행 제한 모드에는 표지판, 쓰다듬기, 개발자 도구가 없다 ⑤ 정차 모드에서 쓰다듬기가 동작한다 ⑥ 가로(주행 제한 모드)에서 스크롤 없이 한 화면에 들어온다, 가로 정차 모드에서도 방이 위쪽에서 잘리지 않는다 ⑦ 에뮬레이터를 세로로 되돌려 놓는다. 보지 못한 항목은 그대로 보고한다.
+- [ ] **Step 6: 커밋.** `git add -A && git commit -m "feat: 화면을 포근한 내 방 스타일로 교체"`

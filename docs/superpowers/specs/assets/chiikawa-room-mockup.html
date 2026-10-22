@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>치이카와 포켓 느낌 화면 목업</title><style>body{font-family:sans-serif;background:#f4f5f9;color:#222;max-width:760px;margin:24px auto;padding:0 16px}.cards{display:grid;gap:20px}.card{background:#fff;border-radius:14px;overflow:hidden}.card-body{padding:12px 16px}</style></head><body>
+<h2>치이카와 포켓 느낌으로, 어느 쪽이 가까워?</h2>
+<p class="subtitle">치이카와 특유의 파스텔, 얇은 갈색 손그림 선, 점 눈, 포근한 스티커 느낌으로 세 가지를 만들었어. 같은 "시무룩" 상태야. 실제 앱 화면은 못 찾아서 내 해석이야.</p>
+
+<style>
+  :root{--line:#6b5648;--cream:#fff7e8;--pink:#ffc9d6;--mint:#bfeedd;--sky:#d9efff;--yellow:#ffe8a3}
+  .scr{height:430px;border-radius:20px;position:relative;overflow:hidden;font-family:"Apple SD Gothic Neo","Noto Sans KR",sans-serif;color:var(--line)}
+  .car{position:absolute;width:130px;height:96px;left:50%;transform:translateX(-50%)}
+  .car .ear{position:absolute;top:-28px;width:26px;height:44px;background:#a8e3cc;border:3px solid var(--line);border-radius:50%}
+  .car .ear.l{left:20px;transform:rotate(-30deg) translateY(8px)}
+  .car .ear.r{right:20px;transform:rotate(30deg) translateY(8px)}
+  .car .body{position:absolute;inset:0;background:var(--mint);border:3px solid var(--line);border-radius:48% 48% 38% 38%}
+  .car .eye{position:absolute;top:36px;width:9px;height:11px;background:var(--line);border-radius:50%}
+  .car .eye.l{left:38px}.car .eye.r{right:38px}
+  .car .brow{position:absolute;top:28px;width:16px;height:3px;background:var(--line);border-radius:2px}
+  .car .brow.l{left:32px;transform:rotate(-14deg)}.car .brow.r{right:32px;transform:rotate(14deg)}
+  .car .blush{position:absolute;top:52px;width:16px;height:9px;background:var(--pink);border-radius:50%;opacity:.7}
+  .car .blush.l{left:22px}.car .blush.r{right:22px}
+  .car .mouth{position:absolute;left:57px;top:60px;width:16px;height:8px;border:3px solid var(--line);border-bottom:none;border-radius:12px 12px 0 0}
+  .car .wh{position:absolute;bottom:-12px;width:24px;height:24px;background:#fff;border:3px solid var(--line);border-radius:50%}
+  .car .wh.l{left:20px}.car .wh.r{right:20px}
+  .say{position:absolute;left:50%;transform:translateX(-50%);background:#fff;border:3px solid var(--line);border-radius:18px;padding:6px 14px;font-size:13px;white-space:nowrap}
+  .say:after{content:"";position:absolute;left:50%;top:-10px;margin-left:-6px;border:6px solid transparent;border-bottom-color:var(--line);border-top:0}
+  .hearts{font-size:15px;letter-spacing:2px;color:#ff8fa8}
+  .hearts i{font-style:normal;color:#e8d5d0}
+  .row{display:flex;gap:10px;justify-content:center}
+  .btn{background:var(--yellow);border:3px solid var(--line);border-radius:20px;padding:8px 16px;font-size:14px;font-weight:700;box-shadow:0 3px 0 var(--line)}
+  .btn.p{background:var(--pink)}
+  .panel{background:#fff;border:3px solid var(--line);border-radius:22px;padding:12px 16px}
+  .g{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:3px 0}
+
+  /* A: 하늘 */
+  .a{background:linear-gradient(#cfeaff,#fff5e4)}
+  .a .cloud{position:absolute;background:#fff;border-radius:50px;opacity:.9}
+  /* B: 방 */
+  .b{background:var(--cream)}
+  .b .wall{position:absolute;inset:0 0 38% 0;background:radial-gradient(circle,#ffe3b8 1.5px,transparent 2px) 0 0/16px 16px,#fff1d6}
+  .b .floor{position:absolute;inset:62% 0 0 0;background:repeating-linear-gradient(90deg,#f1cf9f 0 46px,#e8c08c 46px 49px);border-top:3px solid var(--line)}
+  .b .win{position:absolute;left:18px;top:28px;width:74px;height:64px;background:var(--sky);border:3px solid var(--line);border-radius:14px}
+  .b .win:after{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:3px solid var(--line)}
+  .b .rug{position:absolute;left:50%;transform:translateX(-50%);bottom:20%;width:200px;height:34px;background:#ffd0dc;border:3px solid var(--line);border-radius:50%}
+  /* C: 노트 */
+  .c{background:#f6e7c8;background-image:linear-gradient(#e9d6ae 1px,transparent 1px),linear-gradient(90deg,#e9d6ae 1px,transparent 1px);background-size:22px 22px}
+  .c .tape{position:absolute;width:70px;height:22px;background:rgba(255,201,214,.85);border:2px dashed #e69fb3;top:-6px}
+  .c .stick{position:absolute;background:#fff;border:3px solid var(--line);border-radius:22px;padding:10px 14px;box-shadow:0 3px 0 rgba(107,86,72,.25)}
+</style>
+
+<div class="cards">
+
+  <div class="card" data-choice="sky" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="scr a">
+        <div class="cloud" style="left:16px;top:34px;width:80px;height:26px"></div>
+        <div class="cloud" style="right:20px;top:70px;width:64px;height:22px"></div>
+        <div class="car" style="top:130px"><div class="ear l"></div><div class="ear r"></div><div class="body"></div><div class="brow l"></div><div class="brow r"></div><div class="eye l"></div><div class="eye r"></div><div class="blush l"></div><div class="blush r"></div><div class="mouth"></div><div class="wh l"></div><div class="wh r"></div></div>
+        <div class="say" style="top:60px">...시무룩</div>
+        <div class="panel" style="position:absolute;left:18px;right:18px;top:262px">
+          <div class="g"><span>🍙 밥</span><span class="hearts">♥♥♥<i>♥</i></span></div>
+          <div class="g"><span>🩺 건강</span><span class="hearts">♥♥<i>♥♥</i></span></div>
+          <div class="g"><span>😊 기분</span><span class="hearts">♥<i>♥♥♥</i></span></div>
+        </div>
+        <div class="row" style="position:absolute;left:0;right:0;bottom:18px"><div class="btn p">쓰다듬기</div><div class="btn">말 걸기</div></div>
+      </div>
+    </div>
+    <div class="card-body"><h3>A. 하늘 위 산책</h3><p>하늘색에서 크림색으로 번지는 배경에 구름. 캐릭터가 크게 떠 있고, 하트는 흰 카드에 정리.</p></div>
+  </div>
+
+  <div class="card" data-choice="room" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="scr b">
+        <div class="wall"></div><div class="floor"></div><div class="win"></div>
+        <div class="rug"></div>
+        <div class="car" style="top:176px"><div class="ear l"></div><div class="ear r"></div><div class="body"></div><div class="brow l"></div><div class="brow r"></div><div class="eye l"></div><div class="eye r"></div><div class="blush l"></div><div class="blush r"></div><div class="mouth"></div><div class="wh l"></div><div class="wh r"></div></div>
+        <div class="say" style="top:104px">...시무룩</div>
+        <div class="panel" style="position:absolute;right:14px;top:22px;padding:8px 12px;border-radius:18px">
+          <div class="g" style="gap:10px"><span>🍙</span><span class="hearts">♥♥♥<i>♥</i></span></div>
+          <div class="g" style="gap:10px"><span>🩺</span><span class="hearts">♥♥<i>♥♥</i></span></div>
+          <div class="g" style="gap:10px"><span>😊</span><span class="hearts">♥<i>♥♥♥</i></span></div>
+        </div>
+        <div class="row" style="position:absolute;left:0;right:0;bottom:18px"><div class="btn p">쓰다듬기</div><div class="btn">말 걸기</div></div>
+      </div>
+    </div>
+    <div class="card-body"><h3>B. 포근한 내 방</h3><p>치이카와 포켓의 "홈 화면"처럼 방 안에 캐릭터가 앉아 있어. 창문, 러그, 나무 바닥. 하트는 벽에 붙은 작은 표지판.</p></div>
+  </div>
+
+  <div class="card" data-choice="notebook" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="scr c">
+        <div class="tape" style="left:30px;transform:rotate(-8deg)"></div>
+        <div class="tape" style="right:30px;transform:rotate(7deg)"></div>
+        <div class="stick" style="left:50%;transform:translateX(-50%) rotate(-2deg);top:40px;padding:6px 14px;font-size:14px;font-weight:700">오늘의 우리 차</div>
+        <div class="car" style="top:158px"><div class="ear l"></div><div class="ear r"></div><div class="body"></div><div class="brow l"></div><div class="brow r"></div><div class="eye l"></div><div class="eye r"></div><div class="blush l"></div><div class="blush r"></div><div class="mouth"></div><div class="wh l"></div><div class="wh r"></div></div>
+        <div class="say" style="top:96px">...시무룩</div>
+        <div class="stick" style="left:16px;top:270px;font-size:13px;transform:rotate(-2deg)"><div class="g" style="gap:12px"><span>🍙 밥</span><span class="hearts">♥♥♥<i>♥</i></span></div></div>
+        <div class="stick" style="right:16px;top:300px;font-size:13px;transform:rotate(2deg)"><div class="g" style="gap:12px"><span>🩺 건강</span><span class="hearts">♥♥<i>♥♥</i></span></div></div>
+        <div class="stick" style="left:60px;top:338px;font-size:13px;transform:rotate(-1deg)"><div class="g" style="gap:12px"><span>😊 기분</span><span class="hearts">♥<i>♥♥♥</i></span></div></div>
+        <div class="row" style="position:absolute;left:0;right:0;bottom:12px"><div class="btn p">쓰다듬기</div><div class="btn">말 걸기</div></div>
+      </div>
+    </div>
+    <div class="card-body"><h3>C. 스티커 노트</h3><p>모눈 노트 위에 마스킹 테이프와 스티커를 붙인 느낌. 하트 게이지가 삐뚤게 붙은 스티커.</p></div>
+  </div>
+
+</div>
+</body></html>
