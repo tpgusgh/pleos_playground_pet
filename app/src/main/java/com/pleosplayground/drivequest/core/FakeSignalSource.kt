@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.flow
 enum class Scenario { SMOOTH, AGGRESSIVE, RAINY_NIGHT, UNSUPPORTED }
 
 class FakeSignalSource(
-    private val scenario: Scenario,
+    var scenario: Scenario,
     private val tickDelayMs: Long = 0,
 ) : VehicleSignalSource {
     private val _ux = MutableStateFlow(UxState.RESTRICTED)

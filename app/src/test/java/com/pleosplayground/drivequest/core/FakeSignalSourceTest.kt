@@ -49,4 +49,11 @@ class FakeSignalSourceTest {
             assertTrue(km.last() > 0f)
         }
     }
+
+    @Test
+    fun scenario_can_be_switched_between_trips() = runTest {
+        val source = FakeSignalSource(Scenario.SMOOTH)
+        source.scenario = Scenario.AGGRESSIVE
+        assertTrue(source.trip().toList().count { (it.brakeDecel ?: 0f) > 4.0f } >= 2)
+    }
 }
