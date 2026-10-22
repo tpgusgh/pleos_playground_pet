@@ -291,3 +291,34 @@ class PetViewModel(
   8. 앱을 강제 종료 후 다시 열어도 기분이 유지된다.
   확인하지 못한 항목(TTS 소리 등)은 그대로 보고한다.
 - [ ] **Step 4: 커밋.** `git add -A && git commit -m "feat: 토끼 귀형 캐릭터 그리기와 돌봄 화면 추가"`
+
+---
+
+### Task 6: 다마고치 기기 스타일로 화면 개선
+
+사용자 요청으로 추가된 Task. 로직은 건드리지 않고 겉모습만 바꾼다. 스펙의 "화면 스타일" 절을 따른다.
+
+**Files:**
+- Create: `SRC/ui/TamaDevice.kt`
+- Test: `TEST/ui/TamaDeviceTest.kt`
+- Modify: `SRC/ui/PetScreen.kt`, 필요하면 `SRC/ui/PetFace.kt`, `SRC/ui/MainActivity.kt`(배경)
+
+**Interfaces:**
+- Consumes: `PetViewModel`의 `pet`, `food`, `health`, `face`, `ux`, `line`, `petIt()`, `talk()` (Task 4), `PetFace` (Task 5), `canPlay`
+- Produces:
+```kotlin
+@Composable fun TamaDevice(
+    face: Face, line: String?,
+    food: Int?, health: Int?, mood: Int,
+    parked: Boolean,
+    onPet: () -> Unit, onTalk: () -> Unit,
+)
+fun heartsFor(value: Int?): Int?   // null이면 null, 아니면 ceil(value/25)를 0..4로 고정한 채운 칸 수. 순수 함수
+```
+
+- [ ] **Step 1: `heartsFor`의 실패하는 테스트 작성.** `TEST/ui/TamaDeviceTest.kt`: `hearts_null_stays_null`(null → null), `hearts_round_up_in_quarters`(0 → 0, 1 → 1, 25 → 1, 26 → 2, 50 → 2, 51 → 3, 75 → 3, 76 → 4, 100 → 4), `hearts_clamp_out_of_range`(−5 → 0, 150 → 4). 실행해 실패 확인(컴파일 실패) → 구현 → 통과.
+- [ ] **Step 2: 배경.** 앱 전체 배경을 어두운 남색 그라데이션(위 `#1d2333` → 아래 `#2b3350` 정도)으로 하고 별 같은 작은 점 패턴을 은은하게 깐다(Canvas, 고정 시드). 흰 배경이 남지 않게 `MainActivity`/`PetScreen`의 Surface 색도 맞춘다. 텍스트 색은 어두운 배경에서 읽히게 밝게 한다.
+- [ ] **Step 3: `TamaDevice`.** 둥근 알 모양 파스텔 케이스(그라데이션), 안쪽 LCD 화면(옅은 크림/연두 계열, 안쪽 테두리·그림자, 도트 격자 느낌), LCD 안에 `PetFace`(몸통 색 대비가 낮으면 LCD 색을 조정), 화면 위쪽 아이콘 줄에 밥·건강·기분 아이콘과 하트 4칸(`heartsFor`, `null`인 항목은 아이콘째 숨김), 화면 아래쪽에 말풍선(`line`, 없으면 비움), 기기 아래에 둥근 버튼. 버튼은 `말 걸기`(항상 표시)와 `쓰다듬기`(`parked`일 때만 표시). 아이콘은 이모지나 Canvas로 그리고(외부 이미지·폰트 추가 금지), 하트 칸에는 `semantics`로 "밥 3/4칸" 같은 설명을 붙인다.
+- [ ] **Step 4: `PetScreen` 재구성.** `TamaDevice`를 화면 중앙에 두고, 기존 숫자 막대 게이지를 없앤다(숫자 기분 값은 개발자 도구에 작게 표시). 개발용 컨트롤(프리셋 칩, 연료 슬라이더, 주행 스타일 칩과 "주행 시작", 정차 스위치)은 기기 아래 "개발자 도구" 영역으로 옮긴다. 주행 제한 모드에서는 기기(얼굴, 말풍선, 말 걸기 버튼)와 정차 스위치만 보인다. 정차 스위치의 라벨은 켜짐 "정차", 꺼짐 "주행 중"처럼 상태가 분명하게 읽히게 한다. 기존 동작(쓰다듬기는 정차에서만, 말 걸기는 항상, 슬라이더는 `food`와 동기화)은 그대로 유지한다. `ponytail:` 주석도 유지한다.
+- [ ] **Step 5: 확인.** `./gradlew testDebugUnitTest assembleDebug` 전체 PASS. 에뮬레이터에서 스크린샷으로 확인: ① 흰 배경이 사라지고 남색 배경에 기기가 보인다 ② 행복·배고픔·시무룩 표정이 LCD 위에서 잘 보인다 ③ 하트 칸이 값과 맞는다(LOW_FUEL이면 밥 1칸, UNSUPPORTED면 밥·건강 아이콘 숨김) ④ 주행 제한 모드에는 쓰다듬기 버튼과 개발자 도구가 없다 ⑤ 정차 모드에는 쓰다듬기와 개발자 도구가 있고 쓰다듬기가 동작한다 ⑥ 앱 재시작 후에도 상태 유지. 보지 못한 항목은 그대로 보고한다.
+- [ ] **Step 6: 커밋.** `git add -A && git commit -m "feat: 화면을 다마고치 기기 스타일로 개선"`
