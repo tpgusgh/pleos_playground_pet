@@ -4,7 +4,12 @@ import android.content.Context
 import android.speech.tts.TextToSpeech
 import java.util.Locale
 
-class Speaker(context: Context) {
+interface Narrator {
+    fun speak(text: String)
+    fun shutdown()
+}
+
+class Speaker(context: Context) : Narrator {
     private var ready = false
     private var tts: TextToSpeech? = null
 
@@ -17,11 +22,11 @@ class Speaker(context: Context) {
         }
     }
 
-    fun speak(text: String) {
+    override fun speak(text: String) {
         if (ready) tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "drivequest")
     }
 
-    fun shutdown() {
+    override fun shutdown() {
         tts?.shutdown()
         tts = null
         ready = false

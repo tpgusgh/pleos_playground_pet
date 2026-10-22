@@ -16,18 +16,19 @@ import com.pleosplayground.drivequest.core.gain
 import com.pleosplayground.drivequest.core.score
 import com.pleosplayground.drivequest.core.summaryLine
 import com.pleosplayground.drivequest.core.weeklyBoss
-import com.pleosplayground.drivequest.data.HeroStore
+import com.pleosplayground.drivequest.data.HeroRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
+import java.io.IOException
 
 // ponytail: typed to FakeSignalSource (fake mode only); widen to VehicleSignalSource when a real source lands.
 class GameViewModel(
     private val source: FakeSignalSource,
-    private val store: HeroStore,
-    private val speaker: Speaker,
+    private val store: HeroRepository,
+    private val speaker: Narrator,
 ) : ViewModel() {
     private val _hero = MutableStateFlow(Hero())
     val hero: StateFlow<Hero> = _hero.asStateFlow()
@@ -45,8 +46,13 @@ class GameViewModel(
     private var weekXp = 0
     private var battleSeed = 1L
 
-    init {
-        viewModelScope.launch { _hero.value = store.load() }
+    // A failed load keeps the default hero. runTrip waits on this so a slow load cannot overwrite saved progress.
+    private val loaded = viewModelScope.launch {
+        try {
+            _hero.value = store.load()
+        } catch (e: IOException) {
+            // keep Hero()
+        }
     }
 
     fun setScenario(s: Scenario) {
@@ -60,14 +66,20 @@ class GameViewModel(
         if (!_running.compareAndSet(expect = false, update = true)) return
         viewModelScope.launch {
             try {
+                loaded.join()
                 val trip = score(source.trip().toList())
                 val before = _hero.value
                 val after = before.gain(trip)
                 _hero.value = after
                 _lastScore.value = trip
                 weekXp += trip.xp
-                store.save(after)
                 speaker.speak(summaryLine(trip, after.level > before.level))
+                // ponytail: a failed save is swallowed; the next trip re-saves the in-memory hero. Surface it in the UI if that matters.
+                try {
+                    store.save(after)
+                } catch (e: IOException) {
+                    // keep going
+                }
             } finally {
                 _running.value = false
             }
