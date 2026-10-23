@@ -509,8 +509,11 @@ private fun DrawScope.face(p: CarPaths, s: CarStyle, face: Face, ms: Long, brow:
     drawOval(Cheek, Offset(43f, 121f), Size(22f, 11f), alpha = blush)
     drawOval(Cheek, Offset(135f, 121f), Size(22f, 11f), alpha = blush)
     if (s.ears == EarStyle.CAT) {
-        drawPath(p.whiskers, Line, style = Fine)
-        scale(-1f, 1f, Offset(100f, 0f)) { drawPath(p.whiskers, Line, style = Fine) }
+        // sulky: the whiskers sit lower so the tears (y ~119-130) pass above them
+        translate(0f, if (face == Face.SULKY) 11f else 0f) {
+            drawPath(p.whiskers, Line, style = Fine)
+            scale(-1f, 1f, Offset(100f, 0f)) { drawPath(p.whiskers, Line, style = Fine) }
+        }
     }
     // brows: small arches, tilted inner-end-up when worried
     browArc(72f, eyeY - 13f, -brow)
