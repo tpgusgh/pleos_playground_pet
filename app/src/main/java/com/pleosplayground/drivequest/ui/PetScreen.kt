@@ -48,7 +48,7 @@ import com.pleosplayground.drivequest.core.canPlay
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun PetScreen(vm: PetViewModel) {
+fun PetScreen(vm: PetViewModel, devTools: Boolean = true, onSwitchMode: () -> Unit = {}) {
     val face by vm.face.collectAsState()
     val species by vm.species.collectAsState()
     val ux by vm.ux.collectAsState()
@@ -95,7 +95,7 @@ fun PetScreen(vm: PetViewModel) {
                 Modifier.widthIn(max = if (landscape) 720.dp else 480.dp).fillMaxWidth().height(roomHeight),
                 mood = pet.mood,
             )
-            Row(
+            if (devTools) Row(
                 Modifier.height(SwitchRowHeight),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -104,7 +104,7 @@ fun PetScreen(vm: PetViewModel) {
                 Switch(checked = parked, onCheckedChange = vm::setParked)
             }
             // ponytail: dev panel (fake signals) — remove before building against real signals.
-            if (parked && !showPicker) {
+            if (devTools && parked && !showPicker) {
                 Column(
                     Modifier.widthIn(max = 480.dp).fillMaxWidth()
                         .background(Color(0xFFFFF7E8), RoundedCornerShape(22.dp))
@@ -114,10 +114,17 @@ fun PetScreen(vm: PetViewModel) {
                 ) {
                     Text("개발자 도구 · 기분 ${pet.mood}", color = Line, style = MaterialTheme.typography.labelMedium)
                     // ponytail: 설정 대화상자가 생기면(LLM 계획) 그쪽으로 옮긴다
-                    Button(
-                        onClick = { changing = true },
-                        colors = ButtonDefaults.buttonColors(containerColor = Line, contentColor = Cream),
-                    ) { Text("친구 바꾸기") }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = { changing = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = Line, contentColor = Cream),
+                        ) { Text("친구 바꾸기") }
+                        // ponytail: moves into the settings dialog when the LLM plan creates it
+                        Button(
+                            onClick = onSwitchMode,
+                            colors = ButtonDefaults.buttonColors(containerColor = Line, contentColor = Cream),
+                        ) { Text("시작 화면으로") }
+                    }
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Preset.entries.forEach { p ->
                             FilterChip(selected = false, onClick = { vm.applyPreset(p) }, label = { Text(p.name) })
