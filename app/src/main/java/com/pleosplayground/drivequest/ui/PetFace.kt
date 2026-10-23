@@ -39,6 +39,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
+import com.pleosplayground.drivequest.core.Charm
 import com.pleosplayground.drivequest.core.EarStyle
 import com.pleosplayground.drivequest.core.Face
 import com.pleosplayground.drivequest.core.Species
@@ -100,6 +101,8 @@ private val Hub = Color(0xFFFFF6E2)
 private val Heart = Color(0xFFFF8FA8)
 private val Star = Color(0xFFFFE08A)
 private val Water = Color(0xFFBFE6FF)
+private val Honey = Color(0xFFFFC94D)
+private val Ember = Color(0xFFFF9E6B)
 private val CloudFill = Color(0xFFDCE3EE)
 private val White = Color.White
 private val Nori = Color(0xFF5E6B63)
@@ -121,6 +124,7 @@ private class CarStyle(species: Species) {
     val ear = Color(species.ear)
     val inner = Color(species.inner)
     val ears = species.ears
+    val charm = species.charm
 }
 
 @Composable
@@ -156,7 +160,7 @@ fun PetFace(face: Face, species: Species, modifier: Modifier = Modifier) {
             translate(20f, 0f) {
                 val ms = clock.value.toLong()
                 drawCar(p, style, face, ms, ear.value, brow.value, blush.value)
-                drawEffects(p, rumble, ms, happyFx.value, sulkyFx.value, hungryFx.value)
+                drawEffects(p, style.ears == EarStyle.DOG, rumble, ms, happyFx.value, sulkyFx.value, hungryFx.value)
             }
         }
     }
@@ -187,7 +191,49 @@ private class CarPaths {
     val hungryMouth = Path().apply { addOval(Rect(91f, 124f, 109f, 145f)) }
     val pout = Path().apply { moveTo(93f, 134f); quadraticTo(100f, 130.5f, 107f, 134f) }
     val plateHeart = heart(100f, 157f, 8f)
+    // antenna charms, centred on the antenna tip at (0, 0); the antenna line ends at y = 6 underneath
     val charm = heart(0f, 0f, 12f)
+    val starCharm = star(8.6f, 3.9f)
+    // honey and water share the shape, only the color differs; plumper than a tear so it reads as a drop, not a candle flame
+    val dropCharm = drop(0f, -7f, 14f, 0.82f)
+    val bone = Path().apply {
+        // 16 x 6 rounded bar with two knobs at each end, sitting a little low so the antenna meets its middle
+        addRoundRect(RoundRect(-6f, 1.2f, 6f, 6f, CornerRadius(2.4f)))
+        for (x in floatArrayOf(-6.4f, 6.4f)) for (y in floatArrayOf(1.2f, 6f)) {
+            op(this, Path().apply { addOval(Rect(x - 2.7f, y - 2.7f, x + 2.7f, y + 2.7f)) }, PathOperation.Union)
+        }
+    }
+    val flame = Path().apply {
+        moveTo(0.6f, -9.5f)
+        cubicTo(2f, -5.5f, 6.6f, -3.6f, 6.6f, 1.6f); cubicTo(6.6f, 5.3f, 3.6f, 7.6f, 0f, 7.6f)
+        cubicTo(-3.6f, 7.6f, -6.6f, 5.3f, -6.6f, 1.6f); cubicTo(-6.6f, -1.4f, -5f, -3.6f, -3.8f, -5.6f)
+        cubicTo(-3.2f, -3.2f, -2.2f, -2.2f, -1.1f, -2.6f); cubicTo(-0.9f, -5.2f, -0.6f, -7.6f, 0.6f, -9.5f); close()
+    }
+    val flameCore = Path().apply {
+        moveTo(0f, -2.4f)
+        cubicTo(1.2f, 0f, 3.4f, 1.3f, 3.4f, 3.7f); cubicTo(3.4f, 5.6f, 1.8f, 6.4f, 0f, 6.4f)
+        cubicTo(-1.8f, 6.4f, -3.4f, 5.6f, -3.4f, 3.7f); cubicTo(-3.4f, 1.6f, -1.3f, 0.6f, 0f, -2.4f); close()
+    }
+    // cat and fox: a small rounded triangle nose, point down
+    val catNose = Path().apply {
+        moveTo(98f, 119.2f); lineTo(102f, 119.2f); quadraticTo(103.4f, 119.2f, 102.6f, 120.4f)
+        lineTo(100.8f, 122.6f); quadraticTo(100f, 123.6f, 99.2f, 122.6f)
+        lineTo(97.4f, 120.4f); quadraticTo(96.6f, 119.2f, 98f, 119.2f); close()
+    }
+    // duck bill in place of the muzzle: wide and flat-topped like a spoon (a plain oval read as a pig snout,
+    // a dip on top read as lips)
+    val bill = Path().apply {
+        moveTo(100f, 119f)
+        cubicTo(108f, 119f, 116.5f, 119.5f, 121.5f, 122f); cubicTo(128f, 125f, 130f, 130f, 129.5f, 135f)
+        cubicTo(128.5f, 142.5f, 115f, 147f, 100f, 147f); cubicTo(85f, 147f, 71.5f, 142.5f, 70.5f, 135f)
+        cubicTo(70f, 130f, 72f, 125f, 78.5f, 122f); cubicTo(83.5f, 119.5f, 92f, 119f, 100f, 119f); close()
+    }
+    // right-hand cat whiskers, fanning out a little; the left set is the same path mirrored about x = 100
+    val whiskers = Path().apply {
+        moveTo(126f, 124f); quadraticTo(135f, 122f, 144f, 120.5f)
+        moveTo(126f, 129f); quadraticTo(135f, 128.6f, 144f, 129f)
+        moveTo(126f, 134f); quadraticTo(135f, 135f, 144f, 137.5f)
+    }
     val tear = drop(0f, 0f, 11f)
     val sweat = drop(0f, 0f, 15f)
     val drool = drop(0f, 0f, 10f)
@@ -243,6 +289,11 @@ private class CarPaths {
 }
 
 private val DogPivot = Offset(154f, 44f)
+// hungry thought-bubble dots and sweat drop; the dog's lifted ears sit on the usual spots, so it gets its own
+private val ThoughtDots = arrayOf(Offset(26f, 51f), Offset(35f, 61f))
+private val DogThoughtDots = arrayOf(Offset(24f, 43f), Offset(35f, 35f))
+private val SweatAt = Offset(166f, 54f)
+private val DogSweatAt = Offset(152f, 18f)
 private val TuftRoot = Offset(86f, 40f)
 private val FeatherH = floatArrayOf(18f, 15f, 12f)
 private val FeatherTilt = floatArrayOf(-25f, -5f, 15f)
@@ -257,9 +308,26 @@ private fun heart(cx: Float, cy: Float, w: Float) = Path().apply {
     close()
 }
 
-/** Tear drop with its point at (cx, top) and height [h]. */
-private fun drop(cx: Float, top: Float, h: Float) = Path().apply {
-    val w = h * 0.66f
+/** Five-point star with softly rounded tips, centred on the origin, one point up. */
+private fun star(r: Float, ri: Float) = Path().apply {
+    fun at(i: Int, rad: Float): Offset {
+        val a = (-90f + 36f * i) * PI.toFloat() / 180f
+        return Offset(rad * cos(a), rad * sin(a))
+    }
+    val start = at(9, ri)
+    moveTo(start.x, start.y)
+    for (k in 0 until 5) {
+        val prev = at(2 * k - 1, ri); val tip = at(2 * k, r); val next = at(2 * k + 1, ri)
+        val a = tip + (prev - tip) * 0.2f
+        val b = tip + (next - tip) * 0.2f
+        lineTo(a.x, a.y); quadraticTo(tip.x, tip.y, b.x, b.y); lineTo(next.x, next.y)
+    }
+    close()
+}
+
+/** Tear drop with its point at (cx, top), height [h] and width [h] x [wr]. */
+private fun drop(cx: Float, top: Float, h: Float, wr: Float = 0.66f) = Path().apply {
+    val w = h * wr
     moveTo(cx, top)
     cubicTo(cx + w * 0.25f, top + h * 0.3f, cx + w / 2, top + h * 0.45f, cx + w / 2, top + h - w / 2)
     arcTo(Rect(cx - w / 2, top + h - w, cx + w / 2, top + h), 0f, 180f, false)
@@ -301,10 +369,10 @@ private fun DrawScope.drawCar(p: CarPaths, s: CarStyle, face: Face, ms: Long, ea
                 sideEar(p, s, ear, sway + earTwitch(ms))
             }
         }
-        antenna(p, 3f * (wave(ms, 2000, 1f) - 0.5f) + earTwitch(ms + 700) * 0.6f)
+        antenna(p, s, 3f * (wave(ms, 2000, 1f) - 0.5f) + earTwitch(ms + 700) * 0.6f)
         bodyShell(p, s)
         windshield(p)
-        face(p, face, ms, brow, blush, breath)
+        face(p, s, face, ms, brow, blush, breath)
         frontDetails(p)
     }
     wheel(44f, 170f, 4f * (breath - 0.5f))
@@ -366,12 +434,27 @@ private fun DrawScope.duckTuft(p: CarPaths, s: CarStyle, sway: Float) {
     }
 }
 
-private fun DrawScope.antenna(p: CarPaths, deg: Float) = rotate(deg, Offset(100f, 40f)) {
+private fun DrawScope.antenna(p: CarPaths, s: CarStyle, deg: Float) = rotate(deg, Offset(100f, 40f)) {
     drawLine(Line, Offset(100f, 40f), Offset(100f, 20f), 2.6f, StrokeCap.Round)
     translate(100f, 14f) {
-        drawPath(p.charm, Heart)
-        drawPath(p.charm, Line, style = Fine)
+        when (s.charm) {
+            Charm.HEART -> charm(p.charm, Heart)
+            Charm.STAR -> charm(p.starCharm, Star)
+            Charm.HONEY -> charm(p.dropCharm, Honey, glint = true)
+            Charm.BONE -> charm(p.bone, Cream)
+            Charm.FLAME -> {
+                charm(p.flame, Ember)
+                drawPath(p.flameCore, Star)
+            }
+            Charm.DROP -> charm(p.dropCharm, Water, glint = true)
+        }
     }
+}
+
+private fun DrawScope.charm(path: Path, fill: Color, glint: Boolean = false) {
+    drawPath(path, fill)
+    if (glint) drawOval(White.copy(alpha = 0.9f), Offset(-3f, 0f), Size(2.4f, 3.6f))
+    drawPath(path, Line, style = Fine)
 }
 
 private fun DrawScope.bodyShell(p: CarPaths, s: CarStyle) {
@@ -395,15 +478,40 @@ private fun DrawScope.windshield(p: CarPaths) {
     drawPath(p.windshield, Line, style = Detail)
 }
 
-private fun DrawScope.face(p: CarPaths, face: Face, ms: Long, brow: Float, blush: Float, breath: Float) {
+private fun DrawScope.face(p: CarPaths, s: CarStyle, face: Face, ms: Long, brow: Float, blush: Float, breath: Float) {
     val eyeY = if (face == Face.SULKY) 115f else 112f
-    // cream muzzle patch with a tiny bunny nose
-    drawOval(Cream, Offset(76f, 117f), Size(48f, 32f))
-    drawOval(Line, Offset(76f, 117f), Size(48f, 32f), style = Fine)
-    drawOval(Line, Offset(97.5f, 120.5f), Size(5f, 3.6f))
+    // cream muzzle patch (the duck gets its orange bill instead) and the species' nose
+    if (s.ears == EarStyle.DUCK) {
+        drawPath(p.bill, s.inner)
+        clipPath(p.bill) {
+            drawOval(Line.copy(alpha = 0.1f), Offset(68f, 139f), Size(64f, 16f)) // lower bill, a shade darker
+            drawArc(White.copy(alpha = 0.55f), 200f, 50f, false, Offset(80f, 120f), Size(24f, 16f), style = Highlight)
+        }
+        drawPath(p.bill, Line, style = Fine)
+    } else {
+        drawOval(Cream, Offset(76f, 117f), Size(48f, 32f))
+        drawOval(Line, Offset(76f, 117f), Size(48f, 32f), style = Fine)
+    }
+    when (s.ears) {
+        EarStyle.BUNNY -> drawOval(Line, Offset(97.5f, 120.5f), Size(5f, 3.6f))
+        EarStyle.CAT, EarStyle.FOX -> drawPath(p.catNose, Line)
+        EarStyle.BEAR -> drawOval(Line, Offset(95.5f, 119f), Size(9f, 6f))
+        EarStyle.DOG -> {
+            drawOval(Line, Offset(95f, 118.5f), Size(10f, 7f))
+            drawCircle(White, 1.3f, Offset(97.6f, 120.4f))
+        }
+        EarStyle.DUCK -> {
+            drawCircle(Line, 1.2f, Offset(96f, 122f))
+            drawCircle(Line, 1.2f, Offset(104f, 122f))
+        }
+    }
     // blush
     drawOval(Cheek, Offset(43f, 121f), Size(22f, 11f), alpha = blush)
     drawOval(Cheek, Offset(135f, 121f), Size(22f, 11f), alpha = blush)
+    if (s.ears == EarStyle.CAT) {
+        drawPath(p.whiskers, Line, style = Fine)
+        scale(-1f, 1f, Offset(100f, 0f)) { drawPath(p.whiskers, Line, style = Fine) }
+    }
     // brows: small arches, tilted inner-end-up when worried
     browArc(72f, eyeY - 13f, -brow)
     browArc(128f, eyeY - 13f, brow)
@@ -489,7 +597,7 @@ private fun DrawScope.wheel(cx: Float, cy: Float, deg: Float) {
     drawCircle(Line, 3f, c, style = Fine)
 }
 
-private fun DrawScope.drawEffects(p: CarPaths, rumble: TextLayoutResult, ms: Long, happy: Float, sulky: Float, hungry: Float) {
+private fun DrawScope.drawEffects(p: CarPaths, dog: Boolean, rumble: TextLayoutResult, ms: Long, happy: Float, sulky: Float, hungry: Float) {
     if (happy > 0f) {
         for (i in p.stars.indices) {
             val star = p.stars[i]
@@ -524,12 +632,14 @@ private fun DrawScope.drawEffects(p: CarPaths, rumble: TextLayoutResult, ms: Lon
             drawPath(p.onigiri, Line, alpha = hungry, style = Detail)
             drawRoundRect(Nori, Offset(-3f, 29f), Size(10f, 8f), CornerRadius(1.5f), alpha = hungry)
         }
-        drawCircle(White, 4f, Offset(26f, 51f - float / 2), alpha = hungry)
-        drawCircle(Line, 4f, Offset(26f, 51f - float / 2), alpha = hungry, style = Fine)
-        drawCircle(White, 2.6f, Offset(35f, 61f), alpha = hungry)
-        drawCircle(Line, 2.6f, Offset(35f, 61f), alpha = hungry, style = Fine)
+        val (big, small) = if (dog) DogThoughtDots else ThoughtDots
+        drawCircle(White, 4f, big - Offset(0f, float / 2), alpha = hungry)
+        drawCircle(Line, 4f, big - Offset(0f, float / 2), alpha = hungry, style = Fine)
+        drawCircle(White, 2.6f, small, alpha = hungry)
+        drawCircle(Line, 2.6f, small, alpha = hungry, style = Fine)
         // sweat drop beside the cabin
-        translate(166f, 54f + 2f * wave(ms, 2500)) {
+        val sweat = if (dog) DogSweatAt else SweatAt
+        translate(sweat.x, sweat.y + 2f * wave(ms, 2500)) {
             drawPath(p.sweat, Water, alpha = hungry)
             drawPath(p.sweat, Line, alpha = hungry, style = Fine)
         }
