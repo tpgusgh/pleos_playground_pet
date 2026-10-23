@@ -19,3 +19,6 @@ fun fuelVerdict(rangeKm: Float?, distanceKm: Float?): FuelVerdict {
         else -> FuelVerdict.SHORT
     }
 }
+
+/** The value only if finite and >= 0, else null (treated as unknown). */
+internal fun Float?.validKm(): Float? = this?.takeIf { it.isFinite() && it >= 0f }

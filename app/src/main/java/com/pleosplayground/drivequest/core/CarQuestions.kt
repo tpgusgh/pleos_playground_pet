@@ -24,13 +24,13 @@ fun classifyQuestion(text: String): CarQuestion? {
 
 fun answerFor(q: CarQuestion, trip: TripInfo): String {
     if (q == CarQuestion.RANGE) {
-        return trip.rangeKm?.let { "지금 연료로 약 ${it.roundToInt()}킬로미터 갈 수 있어요" } ?: "갈 수 있는 거리를 잘 모르겠어요"
+        return trip.rangeKm.validKm()?.let { "지금 연료로 약 ${it.roundToInt()}킬로미터 갈 수 있어요" } ?: "갈 수 있는 거리를 잘 모르겠어요"
     }
     val name = trip.destinationName
-    val dist = trip.distanceKm
+    val dist = trip.distanceKm.validKm()
     if (name == null || dist == null) return "목적지가 설정 안 돼 있어요"
     if (q == CarQuestion.DESTINATION) {
-        val eta = trip.etaMinutes?.let { ", 대략 ${it}분 걸려요" } ?: ""
+        val eta = trip.etaMinutes?.takeIf { it >= 0 }?.let { ", 대략 ${it}분 걸려요" } ?: ""
         return "${name}까지 약 ${dist.roundToInt()}킬로미터 남았어요$eta"
     }
     return when (fuelVerdict(trip.rangeKm, dist)) {

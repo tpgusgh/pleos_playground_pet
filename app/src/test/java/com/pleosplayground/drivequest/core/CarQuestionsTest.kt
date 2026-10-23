@@ -54,4 +54,24 @@ class CarQuestionsTest {
         assertTrue(l.all { it.isNotBlank() })
         assertEquals(l.size, l.toSet().size)
     }
+
+    @Test fun range_answer_for_invalid_range_is_unknown() {
+        listOf(Float.NaN, -5f, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY).forEach {
+            assertEquals("갈 수 있는 거리를 잘 모르겠어요", answerFor(CarQuestion.RANGE, TripInfo(it, "집", 80f, 70)))
+        }
+    }
+
+    @Test fun destination_answer_for_invalid_distance_is_not_set() {
+        listOf(Float.NaN, -5f, Float.POSITIVE_INFINITY).forEach {
+            val t = TripInfo(100f, "집", it, 70)
+            assertEquals("목적지가 설정 안 돼 있어요", answerFor(CarQuestion.DESTINATION, t))
+            assertEquals("목적지가 설정 안 돼 있어요", answerFor(CarQuestion.ENOUGH, t))
+        }
+    }
+
+    @Test fun negative_eta_is_left_out() =
+        assertEquals("집까지 약 80킬로미터 남았어요", answerFor(CarQuestion.DESTINATION, TripInfo(10f, "집", 80f, -5)))
+
+    @Test fun enough_with_invalid_range_says_cannot_judge() =
+        assertEquals("갈 수 있는 거리를 몰라서 판단하기 어려워요", answerFor(CarQuestion.ENOUGH, TripInfo(Float.NaN, "집", 80f, 70)))
 }
