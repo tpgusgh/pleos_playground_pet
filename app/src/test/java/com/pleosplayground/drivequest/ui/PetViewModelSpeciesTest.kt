@@ -13,6 +13,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -122,6 +123,26 @@ class PetViewModelSpeciesTest {
         advanceUntilIdle()
         assertEquals(Species.CAT, vm.species.value)
         assertEquals(listOf(Species.CAT), repo.savedSpecies)
+    }
+
+    @Test
+    fun double_tap_with_a_suspending_save_keeps_the_first_choice() = runTest(dispatcher) {
+        val saveGate = CompletableDeferred<Unit>()
+        val repo = FakeRepo(saveGate = saveGate)
+        val vm = newVm(repo)
+        park(vm)
+        vm.chooseSpecies("cat")
+        runCurrent() // the first call is now suspended inside saveSpecies
+        vm.chooseSpecies("dog")
+        runCurrent()
+        assertEquals(Species.CAT, vm.species.value)
+        assertEquals(listOf(Species.CAT), repo.savedSpecies)
+        assertFalse(vm.needsPicker.value)
+        saveGate.complete(Unit)
+        advanceUntilIdle()
+        assertEquals(Species.CAT, vm.species.value)
+        assertEquals(listOf(Species.CAT), repo.savedSpecies)
+        assertEquals(70, repo.saved.last().mood)
     }
 
     @Test

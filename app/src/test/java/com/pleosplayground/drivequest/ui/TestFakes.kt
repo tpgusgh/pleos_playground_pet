@@ -12,6 +12,7 @@ internal class FakeRepo(
     private val failLoad: Boolean = false,
     private val gate: CompletableDeferred<Unit>? = null,
     private val initialSpecies: Species? = null,
+    private val saveGate: CompletableDeferred<Unit>? = null,
 ) : PetRepository {
     val saved = mutableListOf<PetState>()
     val savedSpecies = mutableListOf<Species>()
@@ -35,6 +36,7 @@ internal class FakeRepo(
 
     override suspend fun saveSpecies(species: Species) {
         savedSpecies += species
+        saveGate?.await()
         if (failSave) throw IOException("save")
     }
 }
