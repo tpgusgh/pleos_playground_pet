@@ -3,6 +3,7 @@ package com.pleosplayground.drivequest.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -39,16 +40,22 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.pleosplayground.drivequest.core.ConnectionState
 import com.pleosplayground.drivequest.core.DriveStyle
 import com.pleosplayground.drivequest.core.Preset
 import com.pleosplayground.drivequest.core.Species
 import com.pleosplayground.drivequest.core.canPlay
+import com.pleosplayground.drivequest.core.connectionLabel
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun PetScreen(vm: PetViewModel, devTools: Boolean = true, onSwitchMode: () -> Unit = {}) {
+fun PetScreen(vm: PetViewModel, devTools: Boolean, connection: ConnectionState, onSwitchMode: () -> Unit) {
     val face by vm.face.collectAsState()
     val species by vm.species.collectAsState()
     val ux by vm.ux.collectAsState()
@@ -70,15 +77,34 @@ fun PetScreen(vm: PetViewModel, devTools: Boolean = true, onSwitchMode: () -> Un
 
     BoxWithConstraints(Modifier.fillMaxSize().background(Cream).safeDrawingPadding()) {
         val landscape = maxWidth > maxHeight
-        // Landscape: the room takes the height left over (16dp padding twice, 8dp gap, switch row), so the
+        val label = connectionLabel(connection)
+        val canSwitch = connection == ConnectionState.UNAVAILABLE
+        // Connected header above the room: status pill (36dp) and, when unavailable, the dev-mode button (48dp).
+        val head = (if (label != null) 36.dp else 0.dp) + (if (canSwitch) 48.dp else 0.dp) +
+            (if (label != null && canSwitch) 8.dp else 0.dp)
+        // Height around the room: dev = gap + switch row; connected = header + gap (none without a header).
+        val chrome = if (devTools) 8.dp + SwitchRowHeight else if (head > 0.dp) head + 8.dp else 0.dp
+        // Landscape: the room takes the height left over (16dp padding twice, chrome), so the
         // driving-mode screen needs no scroll; parked dev tools scroll below it. Portrait: room on top.
-        val roomHeight = if (landscape) (maxHeight - 32.dp - 8.dp - SwitchRowHeight).coerceAtLeast(220.dp)
-        else (maxWidth * 0.95f).coerceAtMost(maxHeight - 32.dp - 8.dp - SwitchRowHeight).coerceAtLeast(300.dp)
+        val roomHeight = if (landscape) (maxHeight - 32.dp - chrome).coerceAtLeast(220.dp)
+        else (maxWidth * 0.95f).coerceAtMost(maxHeight - 32.dp - chrome).coerceAtLeast(300.dp)
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            if (!devTools && !showPicker) {
+                if (label != null) Box(
+                    Modifier.height(36.dp)
+                        .background(Color.White, RoundedCornerShape(18.dp))
+                        .border(3.dp, Line, RoundedCornerShape(18.dp))
+                        .padding(horizontal = 14.dp)
+                        .semantics { liveRegion = LiveRegionMode.Polite },
+                    contentAlignment = Alignment.Center,
+                ) { Text(label, color = Line, fontSize = 14.sp, fontWeight = FontWeight.Bold) }
+                // ponytail: moves into the settings dialog when the LLM plan creates it
+                if (canSwitch) PillButton("개발 모드로 보기", Yellow, onSwitchMode)
+            }
             if (showPicker) {
                 SpeciesPicker(
                     initial = if (needsPicker) null else species,
@@ -95,6 +121,8 @@ fun PetScreen(vm: PetViewModel, devTools: Boolean = true, onSwitchMode: () -> Un
                 Modifier.widthIn(max = if (landscape) 720.dp else 480.dp).fillMaxWidth().height(roomHeight),
                 mood = pet.mood,
             )
+            // ponytail: moves into the settings dialog when the LLM plan creates it
+            if (!devTools && parked && !showPicker) PillButton("친구 바꾸기", Pink) { changing = true }
             if (devTools) Row(
                 Modifier.height(SwitchRowHeight),
                 verticalAlignment = Alignment.CenterVertically,

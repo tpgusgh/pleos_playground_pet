@@ -60,9 +60,11 @@ class MainActivity : ComponentActivity() {
                             val vm = remember(active) {
                                 ViewModelProvider(modeVm.petViewModels, petFactory(active))[active.id, PetViewModel::class.java]
                             }
+                            val connection by vm.connection.collectAsState()
                             PetScreen(
-                                vm,
+                                vm = vm,
                                 devTools = showDevTools(active),
+                                connection = connection,
                                 onSwitchMode = if (active == AppMode.DEV) modeVm::clear else ({ modeVm.choose(AppMode.DEV) }),
                             )
                         }
