@@ -83,7 +83,10 @@ fun PetScreen(vm: PetViewModel, devTools: Boolean, connection: ConnectionState, 
         val head = (if (label != null) 36.dp else 0.dp) + (if (canSwitch) 48.dp else 0.dp) +
             (if (label != null && canSwitch) 8.dp else 0.dp)
         // Height around the room: dev = gap + switch row; connected = header + gap (none without a header).
-        val chrome = if (devTools) 8.dp + SwitchRowHeight else if (head > 0.dp) head + 8.dp else 0.dp
+        // Connected + parked also shows "친구 바꾸기" below the room (8dp gap + 48dp button).
+        // Large fonts can make the pill taller than the reserved 36dp; 36dp is the minimum.
+        val chrome = (if (devTools) 8.dp + SwitchRowHeight else if (head > 0.dp) head + 8.dp else 0.dp) +
+            (if (!devTools && parked) 56.dp else 0.dp)
         // Landscape: the room takes the height left over (16dp padding twice, chrome), so the
         // driving-mode screen needs no scroll; parked dev tools scroll below it. Portrait: room on top.
         val roomHeight = if (landscape) (maxHeight - 32.dp - chrome).coerceAtLeast(220.dp)
@@ -95,14 +98,15 @@ fun PetScreen(vm: PetViewModel, devTools: Boolean, connection: ConnectionState, 
         ) {
             if (!devTools && !showPicker) {
                 if (label != null) Box(
-                    Modifier.height(36.dp)
+                    Modifier.heightIn(min = 36.dp)
                         .background(Color.White, RoundedCornerShape(18.dp))
                         .border(3.dp, Line, RoundedCornerShape(18.dp))
                         .padding(horizontal = 14.dp)
-                        .semantics { liveRegion = LiveRegionMode.Polite },
+                        .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
                     contentAlignment = Alignment.Center,
                 ) { Text(label, color = Line, fontSize = 14.sp, fontWeight = FontWeight.Bold) }
                 // ponytail: moves into the settings dialog when the LLM plan creates it
+                // ponytail: in a real car this opens dev mode whose 정차 switch unlocks text input while driving: hide it or gate it on a real UX state / release build once the Pleos SDK source lands
                 if (canSwitch) PillButton("개발 모드로 보기", Yellow, onSwitchMode)
             }
             if (showPicker) {

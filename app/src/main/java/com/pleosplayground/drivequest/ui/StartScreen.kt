@@ -50,11 +50,11 @@ fun StartScreen(onPick: (AppMode) -> Unit) {
             Text("무엇으로 시작할까요?", color = Line, fontSize = 22.sp, fontWeight = FontWeight.Bold)
             if (landscape) Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 ModeCard("개발 모드", "가짜 신호로 시험해요", Yellow, Modifier.width(260.dp)) { onPick(AppMode.DEV) }
-                ModeCard("차량 연결", "차에서 읽은 값으로 키워요", Pink, Modifier.width(260.dp)) { onPick(AppMode.CONNECTED) }
+                ModeCard("차량 연결", "차량 신호로 키워요 (준비 중)", Pink, Modifier.width(260.dp)) { onPick(AppMode.CONNECTED) }
             } else Column(Modifier.fillMaxWidth(), Arrangement.spacedBy(16.dp), Alignment.CenterHorizontally) {
                 val w = Modifier.fillMaxWidth().widthIn(max = 360.dp)
                 ModeCard("개발 모드", "가짜 신호로 시험해요", Yellow, w) { onPick(AppMode.DEV) }
-                ModeCard("차량 연결", "차에서 읽은 값으로 키워요", Pink, w) { onPick(AppMode.CONNECTED) }
+                ModeCard("차량 연결", "차량 신호로 키워요 (준비 중)", Pink, w) { onPick(AppMode.CONNECTED) }
             }
         }
     }
