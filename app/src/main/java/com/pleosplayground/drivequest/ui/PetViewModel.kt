@@ -7,8 +7,10 @@ import com.pleosplayground.drivequest.core.AlertState
 import com.pleosplayground.drivequest.core.DriveStyle
 import com.pleosplayground.drivequest.core.Face
 import com.pleosplayground.drivequest.core.FakeSignalSource
+import com.pleosplayground.drivequest.core.LineKind
 import com.pleosplayground.drivequest.core.PetState
 import com.pleosplayground.drivequest.core.Preset
+import com.pleosplayground.drivequest.core.Species
 import com.pleosplayground.drivequest.core.TripInfo
 import com.pleosplayground.drivequest.core.UxState
 import com.pleosplayground.drivequest.core.alertLine
@@ -17,15 +19,15 @@ import com.pleosplayground.drivequest.core.applyDriving
 import com.pleosplayground.drivequest.core.canPlay
 import com.pleosplayground.drivequest.core.classifyQuestion
 import com.pleosplayground.drivequest.core.decideAlert
-import com.pleosplayground.drivequest.core.driveStartLine
 import com.pleosplayground.drivequest.core.faceFor
 import com.pleosplayground.drivequest.core.food
 import com.pleosplayground.drivequest.core.gapBlocks
 import com.pleosplayground.drivequest.core.health
+import com.pleosplayground.drivequest.core.lineFor
 import com.pleosplayground.drivequest.core.moodDelta
-import com.pleosplayground.drivequest.core.notUnderstoodLine
 import com.pleosplayground.drivequest.core.pet
 import com.pleosplayground.drivequest.core.settle
+import com.pleosplayground.drivequest.core.speciesFromId
 import com.pleosplayground.drivequest.core.spoke
 import com.pleosplayground.drivequest.core.talk
 import com.pleosplayground.drivequest.core.tripInfo
@@ -60,6 +62,16 @@ class PetViewModel(
     private val _line = MutableStateFlow<String?>(null)
     val line: StateFlow<String?> = _line.asStateFlow()
 
+    // Rabbit until chosen. needsPicker stays false until the stored species has been read.
+    private val _species = MutableStateFlow(Species.RABBIT)
+    val species: StateFlow<Species> = _species.asStateFlow()
+    private val _speciesChosen = MutableStateFlow(false)
+    val speciesChosen: StateFlow<Boolean> = _speciesChosen.asStateFlow()
+    private val _speciesLoaded = MutableStateFlow(false)
+    val needsPicker: StateFlow<Boolean> = combine(_speciesLoaded, _speciesChosen, source.ux) { loaded, chosen, u ->
+        loaded && !chosen && u == UxState.PARKED
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     private val _trip = MutableStateFlow(tripInfo(source.state.value))
     val trip: StateFlow<TripInfo> = _trip.asStateFlow()
     private val _proactive = MutableStateFlow(true)
@@ -70,6 +82,16 @@ class PetViewModel(
 
     // A failed load keeps the default pet. Actions join this so a slow load cannot overwrite saved progress.
     private val loaded = viewModelScope.launch {
+        val stored = try {
+            store.loadSpecies()
+        } catch (e: IOException) {
+            null
+        }
+        if (stored != null) {
+            _species.value = stored
+            _speciesChosen.value = true
+        }
+        _speciesLoaded.value = true
         _pet.value = try {
             store.load()
         } catch (e: IOException) {
@@ -132,7 +154,7 @@ class PetViewModel(
         if (!gapBlocks(now, last, GREET_GAP_MS) && !gapBlocks(now, alertState.lastSpokeMs, ALERT_GAP_MS)) {
             lastGreetMs = now
             alertState = alertState.spoke(now)
-            say(driveStartLine(currentFace()))
+            say(lineFor(_species.value, LineKind.DRIVE_START, currentFace()))
         }
     }
 
@@ -153,12 +175,14 @@ class PetViewModel(
     }
 
     fun talk() = act {
-        val r = _pet.value.talk(clock(), currentFace())
+        val face = currentFace()
+        val r = _pet.value.talk(clock(), face)
+        if (r.reply == null) return@act // PetState.talk is only the cooldown/mood gate; the line comes from the species
         if (r.state != _pet.value) {
             _pet.value = r.state
             persist()
         }
-        r.reply?.let(::say)
+        say(lineFor(_species.value, LineKind.GREETING, face))
     }
 
     fun ask(text: String) = act {
@@ -169,7 +193,31 @@ class PetViewModel(
             persist()
         }
         val q = classifyQuestion(text)
-        say(if (q != null) answerFor(q, _trip.value) else notUnderstoodLine(currentFace()))
+        say(if (q != null) answerFor(q, _trip.value) else lineFor(_species.value, LineKind.NOT_UNDERSTOOD, currentFace()))
+    }
+
+    fun chooseSpecies(id: String) = act {
+        if (!_speciesChosen.value) switchSpecies(id)
+    }
+
+    fun changeSpecies(id: String) = act {
+        if (speciesFromId(id) != _species.value) switchSpecies(id)
+    }
+
+    // The species state is set before the first suspend call, so a second quick call sees the new state.
+    private suspend fun switchSpecies(id: String) {
+        if (!canPlay(source.ux.value)) return
+        val next = speciesFromId(id) ?: return
+        _species.value = next
+        _speciesChosen.value = true
+        _pet.value = PetState(settledAtMs = clock())
+        _line.value = null
+        try {
+            store.saveSpecies(next)
+        } catch (e: IOException) {
+            // ponytail: 종 저장 실패는 무시, 다음 실행에 고르기 화면이 다시 뜰 수 있다
+        }
+        persist()
     }
 
     fun setProactive(enabled: Boolean) = act {

@@ -7,8 +7,10 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.pleosplayground.drivequest.core.PetState
+import com.pleosplayground.drivequest.core.Species
 import com.pleosplayground.drivequest.core.decodePet
 import com.pleosplayground.drivequest.core.encode
+import com.pleosplayground.drivequest.core.speciesFromId
 import kotlinx.coroutines.flow.first
 
 private val Context.dataStore by preferencesDataStore(
@@ -16,10 +18,13 @@ private val Context.dataStore by preferencesDataStore(
     corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
 )
 private val PET_KEY = stringPreferencesKey("pet")
+private val SPECIES_KEY = stringPreferencesKey("species")
 
 interface PetRepository {
     suspend fun load(): PetState
     suspend fun save(state: PetState)
+    suspend fun loadSpecies(): Species? // null: not chosen yet, or an unknown stored value
+    suspend fun saveSpecies(species: Species)
 }
 
 class PetStore(context: Context) : PetRepository {
@@ -29,5 +34,11 @@ class PetStore(context: Context) : PetRepository {
 
     override suspend fun save(state: PetState) {
         store.edit { it[PET_KEY] = state.encode() }
+    }
+
+    override suspend fun loadSpecies(): Species? = speciesFromId(store.data.first()[SPECIES_KEY])
+
+    override suspend fun saveSpecies(species: Species) {
+        store.edit { it[SPECIES_KEY] = species.id }
     }
 }
