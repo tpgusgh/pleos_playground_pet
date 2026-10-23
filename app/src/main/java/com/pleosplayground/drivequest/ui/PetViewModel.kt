@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pleosplayground.drivequest.core.ALERT_GAP_MS
 import com.pleosplayground.drivequest.core.AlertState
+import com.pleosplayground.drivequest.core.ConnectionState
+import com.pleosplayground.drivequest.core.DevControls
 import com.pleosplayground.drivequest.core.DriveStyle
 import com.pleosplayground.drivequest.core.Face
 import com.pleosplayground.drivequest.core.FakeSignalSource
@@ -13,6 +15,7 @@ import com.pleosplayground.drivequest.core.Preset
 import com.pleosplayground.drivequest.core.Species
 import com.pleosplayground.drivequest.core.TripInfo
 import com.pleosplayground.drivequest.core.UxState
+import com.pleosplayground.drivequest.core.VehicleSignalSource
 import com.pleosplayground.drivequest.core.alertLine
 import com.pleosplayground.drivequest.core.answerFor
 import com.pleosplayground.drivequest.core.applyDriving
@@ -43,13 +46,22 @@ import java.io.IOException
 
 private const val GREET_GAP_MS = 600_000L
 
-// ponytail: typed to FakeSignalSource (fake mode only); widen to VehicleSignalSource when a real source lands.
+// ponytail: dev actions go through DevControls (FakeSignalSource only); with a real source they are no-ops.
 class PetViewModel(
-    private val source: FakeSignalSource,
+    private val source: VehicleSignalSource,
+    private val dev: DevControls?,
     private val store: PetRepository,
     private val narrator: Narrator,
     private val clock: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
+    constructor(
+        source: FakeSignalSource,
+        store: PetRepository,
+        narrator: Narrator,
+        clock: () -> Long = System::currentTimeMillis,
+    ) : this(source, source, store, narrator, clock)
+
+    val connection: StateFlow<ConnectionState> = source.connection
     private val _pet = MutableStateFlow(PetState())
     val pet: StateFlow<PetState> = _pet.asStateFlow()
     private val _food = MutableStateFlow(food(source.state.value))
@@ -226,15 +238,15 @@ class PetViewModel(
     }
 
     fun setTrip(rangeKm: Float?, destinationName: String?, distanceKm: Float?, etaMinutes: Int?) =
-        act { source.setTrip(rangeKm, destinationName, distanceKm, etaMinutes) }
+        act { dev?.setTrip(rangeKm, destinationName, distanceKm, etaMinutes) }
 
-    fun setParked(parked: Boolean) = act { source.setUx(if (parked) UxState.PARKED else UxState.RESTRICTED) }
+    fun setParked(parked: Boolean) = act { dev?.setUx(if (parked) UxState.PARKED else UxState.RESTRICTED) }
 
-    fun setFuel(percent: Int?) = act { source.setFuel(percent) }
+    fun setFuel(percent: Int?) = act { dev?.setFuel(percent) }
 
-    fun applyPreset(preset: Preset) = act { source.applyPreset(preset) }
+    fun applyPreset(preset: Preset) = act { dev?.applyPreset(preset) }
 
-    fun startDrive(style: DriveStyle) = act { source.drive(style) }
+    fun startDrive(style: DriveStyle) = act { dev?.drive(style) }
 
     override fun onCleared() = narrator.shutdown()
 }
