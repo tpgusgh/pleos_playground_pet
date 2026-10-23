@@ -20,6 +20,7 @@ import com.pleosplayground.drivequest.core.decideAlert
 import com.pleosplayground.drivequest.core.driveStartLine
 import com.pleosplayground.drivequest.core.faceFor
 import com.pleosplayground.drivequest.core.food
+import com.pleosplayground.drivequest.core.gapBlocks
 import com.pleosplayground.drivequest.core.health
 import com.pleosplayground.drivequest.core.moodDelta
 import com.pleosplayground.drivequest.core.notUnderstoodLine
@@ -128,8 +129,7 @@ class PetViewModel(
         checkAlert() // a waiting alert outranks the greeting; if it speaks, the shared gap skips the greeting
         val now = clock()
         val last = lastGreetMs
-        val alertLast = alertState.lastSpokeMs
-        if ((last == null || now - last >= GREET_GAP_MS) && (alertLast == null || now - alertLast >= ALERT_GAP_MS)) {
+        if (!gapBlocks(now, last, GREET_GAP_MS) && !gapBlocks(now, alertState.lastSpokeMs, ALERT_GAP_MS)) {
             lastGreetMs = now
             alertState = alertState.spoke(now)
             say(driveStartLine(currentFace()))

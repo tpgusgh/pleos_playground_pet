@@ -149,6 +149,18 @@ class PetViewModelTripTest {
     }
 
     @Test
+    fun greeting_works_after_the_clock_went_backwards() = runTest(dispatcher) {
+        now = 100_000_000L
+        val vm = newVm()
+        vm.setParked(true); advanceUntilIdle()
+        vm.setParked(false); advanceUntilIdle()
+        now -= 2 * 3_600_000L
+        vm.setParked(true); advanceUntilIdle()
+        vm.setParked(false); advanceUntilIdle()
+        assertEquals(listOf(driveStartLine(Face.HAPPY), driveStartLine(Face.HAPPY)), narrator.lines)
+    }
+
+    @Test
     fun drive_start_greeting_is_skipped_right_after_an_alert() = runTest(dispatcher) {
         val vm = newVm()
         preset(vm, Preset.RUNNING_OUT)

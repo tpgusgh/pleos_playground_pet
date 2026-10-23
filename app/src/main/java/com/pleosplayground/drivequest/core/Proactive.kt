@@ -14,6 +14,9 @@ data class AlertDecision(val state: AlertState, val alert: Alert?)
 
 const val ALERT_GAP_MS = 180_000L
 
+/** A gap blocks only while 0 <= elapsed < gap; a negative elapsed time (clock went backwards) does not block. */
+fun gapBlocks(nowMs: Long, lastMs: Long?, gapMs: Long): Boolean = lastMs != null && (nowMs - lastMs) in 0 until gapMs
+
 fun decideAlert(prev: AlertState, trip: TripInfo, nowMs: Long, canSpeak: Boolean): AlertDecision {
     val range = trip.rangeKm
     val dist = trip.distanceKm
@@ -29,8 +32,7 @@ fun decideAlert(prev: AlertState, trip: TripInfo, nowMs: Long, canSpeak: Boolean
         lastDestination = trip.destinationName,
     )
 
-    val last = s.lastSpokeMs
-    if (!canSpeak || (last != null && nowMs - last < ALERT_GAP_MS)) return AlertDecision(s, null)
+    if (!canSpeak || gapBlocks(nowMs, s.lastSpokeMs, ALERT_GAP_MS)) return AlertDecision(s, null)
 
     return when {
         shortNow && s.shortArmed -> AlertDecision(s.copy(shortArmed = false, lowArmed = false, lastSpokeMs = nowMs), Alert.FUEL_SHORT)

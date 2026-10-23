@@ -35,6 +35,12 @@ class ProactiveTest {
         assertEquals(Alert.NEARLY_THERE, decideAlert(blocked.state, near, 180_000, true).alert)
     }
 
+    @Test fun alert_is_not_blocked_when_the_clock_went_backwards() {
+        val d = decideAlert(AlertState(lastSpokeMs = 10_000_000), shortTrip, 5_000_000, true)
+        assertEquals(Alert.FUEL_SHORT, d.alert)
+        assertEquals(5_000_000L, d.state.lastSpokeMs)
+    }
+
     @Test fun cannot_speak_changes_nothing_but_rearming() {
         val d = decideAlert(AlertState(), shortTrip, 0, false)
         assertNull(d.alert)
