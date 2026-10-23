@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.yield
 
-enum class Preset { HEALTHY, LOW_FUEL, NEEDS_CARE, UNSUPPORTED }
+enum class Preset { HEALTHY, LOW_FUEL, NEEDS_CARE, UNSUPPORTED, LONG_TRIP, RUNNING_OUT }
 enum class DriveStyle { SMOOTH, HARSH }
 
 class FakeSignalSource(private val tickDelayMs: Long = 0) : VehicleSignalSource {
@@ -23,6 +23,13 @@ class FakeSignalSource(private val tickDelayMs: Long = 0) : VehicleSignalSource 
 
     fun setFuel(percent: Int?) {
         _state.value = _state.value.copy(fuelPercent = percent)
+    }
+
+    fun setTrip(rangeKm: Float?, destinationName: String?, distanceKm: Float?, etaMinutes: Int?) {
+        _state.value = _state.value.copy(
+            rangeKm = rangeKm, destinationName = destinationName,
+            distanceToDestinationKm = distanceKm, etaMinutes = etaMinutes,
+        )
     }
 
     /** Replaces the static items only; brake/steer go back to null, ux is kept. */
@@ -51,4 +58,12 @@ private fun presetSample(p: Preset): Sample = when (p) {
     Preset.LOW_FUEL -> Sample(fuelPercent = 10, tireOk = true, doorsClosed = true, windowsClosed = true, wiperOk = true)
     Preset.NEEDS_CARE -> Sample(fuelPercent = 55, tireOk = false, doorsClosed = false, windowsClosed = false, wiperOk = true)
     Preset.UNSUPPORTED -> Sample()
+    Preset.LONG_TRIP -> Sample(
+        fuelPercent = 60, tireOk = true, doorsClosed = true, windowsClosed = true, wiperOk = true,
+        rangeKm = 200f, destinationName = "집", distanceToDestinationKm = 80f, etaMinutes = 70,
+    )
+    Preset.RUNNING_OUT -> Sample(
+        fuelPercent = 15, tireOk = true, doorsClosed = true, windowsClosed = true, wiperOk = true,
+        rangeKm = 40f, destinationName = "집", distanceToDestinationKm = 120f, etaMinutes = 100,
+    )
 }

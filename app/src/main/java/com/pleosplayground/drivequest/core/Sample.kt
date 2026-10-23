@@ -10,4 +10,8 @@ data class Sample(
     val doorsClosed: Boolean? = null,
     val windowsClosed: Boolean? = null,
     val wiperOk: Boolean? = null,
+    val rangeKm: Float? = null,                 // 연료나 배터리로 갈 수 있는 거리
+    val destinationName: String? = null,
+    val distanceToDestinationKm: Float? = null,
+    val etaMinutes: Int? = null,
 )

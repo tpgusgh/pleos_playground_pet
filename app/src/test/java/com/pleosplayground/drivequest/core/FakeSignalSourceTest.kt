@@ -106,4 +106,47 @@ class FakeSignalSourceTest {
         assertNull(s.steeringRate)
         assertEquals(80, s.fuelPercent)
     }
+
+    private fun trip(s: Sample) = listOf(s.rangeKm, s.destinationName, s.distanceToDestinationKm, s.etaMinutes)
+
+    @Test
+    fun preset_long_trip_sets_trip_values() {
+        val source = FakeSignalSource()
+        source.applyPreset(Preset.LONG_TRIP)
+        val s = source.state.value
+        assertEquals(60, s.fuelPercent)
+        assertEquals(listOf<Any?>(200f, "집", 80f, 70), trip(s))
+        assertEquals(listOf(true, true, true, true), listOf(s.tireOk, s.doorsClosed, s.windowsClosed, s.wiperOk))
+    }
+
+    @Test
+    fun preset_running_out_sets_trip_values() {
+        val source = FakeSignalSource()
+        source.applyPreset(Preset.RUNNING_OUT)
+        val s = source.state.value
+        assertEquals(15, s.fuelPercent)
+        assertEquals(listOf<Any?>(40f, "집", 120f, 100), trip(s))
+        assertEquals(listOf(true, true, true, true), listOf(s.tireOk, s.doorsClosed, s.windowsClosed, s.wiperOk))
+    }
+
+    @Test
+    fun existing_presets_have_no_trip_info() {
+        val source = FakeSignalSource()
+        listOf(Preset.HEALTHY, Preset.LOW_FUEL, Preset.NEEDS_CARE, Preset.UNSUPPORTED).forEach {
+            source.applyPreset(it)
+            assertEquals(listOf<Any?>(null, null, null, null), trip(source.state.value))
+        }
+    }
+
+    @Test
+    fun set_trip_updates_the_four_values_and_keeps_the_rest() {
+        val source = FakeSignalSource()
+        source.setTrip(50f, "회사", 20f, 25)
+        val s = source.state.value
+        assertEquals(listOf<Any?>(50f, "회사", 20f, 25), trip(s))
+        assertEquals(80, s.fuelPercent)
+        assertEquals(true, s.tireOk)
+        source.setTrip(null, null, null, null)
+        assertEquals(listOf<Any?>(null, null, null, null), trip(source.state.value))
+    }
 }
