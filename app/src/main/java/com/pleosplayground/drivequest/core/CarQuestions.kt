@@ -15,9 +15,10 @@ fun classifyQuestion(text: String): CarQuestion? {
     fun has(words: List<String>) = words.any { it in t }
     return when {
         (has(ENOUGH_WORDS) && has(NOUNS)) ||
-            (has(listOf("연료", "기름", "배터리")) && "목적지" in t) -> CarQuestion.ENOUGH
+            (has(listOf("연료", "기름", "배터리", "충전")) && "목적지" in t) -> CarQuestion.ENOUGH
         has(listOf("목적지", "도착", "몇분", "몇킬로")) -> CarQuestion.DESTINATION
         has(FUEL_WORDS) -> CarQuestion.RANGE
+        has(listOf("얼마나가", "얼마나갈", "얼마나더가", "얼마나더갈")) -> CarQuestion.RANGE
         else -> null
     }
 }

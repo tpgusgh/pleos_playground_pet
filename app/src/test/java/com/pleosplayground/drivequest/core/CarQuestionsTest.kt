@@ -74,4 +74,13 @@ class CarQuestionsTest {
 
     @Test fun enough_with_invalid_range_says_cannot_judge() =
         assertEquals("갈 수 있는 거리를 몰라서 판단하기 어려워요", answerFor(CarQuestion.ENOUGH, TripInfo(Float.NaN, "집", 80f, 70)))
+
+    @Test fun natural_range_questions() =
+        listOf("얼마나 갈 수 있어?", "얼마나 더 갈 수 있어?", "얼마나 가?").forEach { assertEquals(it, CarQuestion.RANGE, classifyQuestion(it)) }
+
+    @Test fun destination_wins_over_how_far_to_go() =
+        assertEquals(CarQuestion.DESTINATION, classifyQuestion("목적지까지 얼마나 가야 해?"))
+
+    @Test fun charge_and_destination_is_enough() =
+        assertEquals(CarQuestion.ENOUGH, classifyQuestion("충전으로 목적지까지 갈 수 있어?"))
 }
