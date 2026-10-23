@@ -165,4 +165,35 @@ class PetViewModelTripTest {
         ask(vm, "목적지까지 연료 충분해?")
         assertEquals(listOf("목적지가 설정 안 돼 있어요"), narrator.lines)
     }
+
+    @Test
+    fun waiting_alert_wins_over_the_drive_start_greeting() = runTest(dispatcher) {
+        val vm = newVm()
+        val t0 = now
+        vm.setParked(true); advanceUntilIdle()
+        vm.setParked(false); advanceUntilIdle()
+        assertEquals(1, narrator.lines.size)
+        now = t0 + 1_000
+        preset(vm, Preset.RUNNING_OUT)
+        assertEquals(1, narrator.lines.size)
+        now = t0 + 700_000
+        vm.setParked(true); advanceUntilIdle()
+        vm.setParked(false); advanceUntilIdle()
+        assertEquals(2, narrator.lines.size)
+        assertEquals(alertLine(Alert.FUEL_SHORT), narrator.lines.last())
+    }
+
+    @Test
+    fun drive_start_greeting_is_silent_when_proactive_is_off() = runTest(dispatcher) {
+        val vm = newVm()
+        vm.setProactive(false); advanceUntilIdle()
+        vm.setParked(true); advanceUntilIdle()
+        vm.setParked(false); advanceUntilIdle()
+        assertEquals(emptyList<String>(), narrator.lines)
+        vm.setProactive(true); advanceUntilIdle()
+        now += 600_000
+        vm.setParked(true); advanceUntilIdle()
+        vm.setParked(false); advanceUntilIdle()
+        assertEquals(listOf(driveStartLine(Face.HAPPY)), narrator.lines)
+    }
 }

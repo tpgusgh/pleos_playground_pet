@@ -115,7 +115,8 @@ class PetViewModel(
     private fun currentFace() = faceFor(_food.value, _health.value, _pet.value.mood)
 
     // ponytail: no "stay quiet while the user is talking" rule yet; the LLM plan adds it.
-    // A blocked alert stays armed and is retried on the next state emission or setProactive(true).
+    // A blocked alert stays armed and is retried only on the next source.state emission, on setProactive(true)
+    // or on a drive start (with the fake source: after the next dev-tool action).
     private fun checkAlert() {
         val d = decideAlert(alertState, _trip.value, clock(), _proactive.value)
         alertState = d.state
@@ -123,6 +124,8 @@ class PetViewModel(
     }
 
     private fun greetDriveStart() {
+        if (!_proactive.value) return // the proactive switch also silences the greeting
+        checkAlert() // a waiting alert outranks the greeting; if it speaks, the shared gap skips the greeting
         val now = clock()
         val last = lastGreetMs
         val alertLast = alertState.lastSpokeMs
