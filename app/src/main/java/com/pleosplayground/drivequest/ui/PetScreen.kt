@@ -87,7 +87,8 @@ fun PetScreen(vm: PetViewModel) {
                         else if (it == species) changing = false else pendingChange = it
                     },
                     onClose = if (needsPicker) null else ({ changing = false }),
-                    modifier = Modifier.widthIn(max = 460.dp).fillMaxWidth(),
+                    modifier = Modifier.widthIn(max = if (landscape) 760.dp else 460.dp).fillMaxWidth(),
+                    landscape = landscape,
                 )
             } else RoomScene(
                 face, species, line, food, health, parked, vm::petIt, vm::talk,

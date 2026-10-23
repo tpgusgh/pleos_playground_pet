@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -34,7 +35,11 @@ import com.pleosplayground.drivequest.core.Face
 import com.pleosplayground.drivequest.core.Species
 import com.pleosplayground.drivequest.core.speciesFromId
 
-/** Pick a friend: six cards, a big preview of the chosen one and a confirm button (only once something is chosen). */
+/**
+ * Pick a friend: six cards, a big preview of the chosen one and a confirm button (only once something is chosen).
+ * The preview and button slots keep their final size from the start, so choosing a card never moves the grid.
+ * Landscape puts the preview and buttons beside the grid so the confirm button stays on screen.
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SpeciesPicker(
@@ -42,31 +47,56 @@ fun SpeciesPicker(
     onConfirm: (Species) -> Unit,
     onClose: (() -> Unit)?,
     modifier: Modifier = Modifier,
+    landscape: Boolean = false,
 ) {
     var chosenId by rememberSaveable { mutableStateOf(initial?.id) }
     val chosen = speciesFromId(chosenId)
-    Column(
-        modifier,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
+    val title: @Composable () -> Unit = {
         Text("함께 달릴 친구를 골라 주세요", color = Line, fontSize = 20.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-        if (chosen != null) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                PetFace(Face.HAPPY, chosen, Modifier.height(160.dp))
-                Text("${chosen.displayName} · ${chosen.tagline}", color = Line, fontSize = 16.sp, fontWeight = FontWeight.Medium)
-            }
-        }
+    }
+    val grid: @Composable (Modifier) -> Unit = { m ->
         FlowRow(
-            Modifier.fillMaxWidth(),
+            m,
             horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Species.entries.forEach { s -> SpeciesCard(s, s == chosen) { chosenId = s.id } }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    }
+    val preview: @Composable () -> Unit = {
+        Column(Modifier.height(188.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+            if (chosen != null) {
+                PetFace(Face.HAPPY, chosen, Modifier.height(160.dp))
+                Text("${chosen.displayName} · ${chosen.tagline}", color = Line, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+            } else {
+                Text("카드를 눌러 보세요", color = Line, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+            }
+        }
+    }
+    // The button row keeps its height before anything is chosen, so nothing moves when the confirm button appears.
+    val buttons: @Composable () -> Unit = {
+        Row(Modifier.heightIn(min = 51.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             if (onClose != null) PillButton("닫기", Yellow, onClose)
             if (chosen != null) PillButton("이 아이로 시작", Pink) { onConfirm(chosen) }
+        }
+    }
+    if (landscape) {
+        Column(modifier, verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            title()
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                grid(Modifier.weight(1f))
+                Column(Modifier.width(240.dp), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    preview()
+                    buttons()
+                }
+            }
+        }
+    } else {
+        Column(modifier, verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            title()
+            preview()
+            grid(Modifier.fillMaxWidth())
+            buttons()
         }
     }
 }
