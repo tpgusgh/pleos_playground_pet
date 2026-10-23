@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
@@ -26,7 +27,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.pleosplayground.drivequest.core.DriveStyle
 import com.pleosplayground.drivequest.core.Preset
+import com.pleosplayground.drivequest.core.Species
 import com.pleosplayground.drivequest.core.canPlay
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -54,7 +58,13 @@ fun PetScreen(vm: PetViewModel) {
     val pet by vm.pet.collectAsState()
     val trip by vm.trip.collectAsState()
     val proactive by vm.proactiveEnabled.collectAsState()
+    val needsPicker by vm.needsPicker.collectAsState()
     val parked = canPlay(ux)
+    var changing by rememberSaveable { mutableStateOf(false) }
+    var pendingChange by remember { mutableStateOf<Species?>(null) }
+    val showPicker = needsPicker || (changing && parked)
+    // Leaving parked mode must not leave the change screen or its dialog behind.
+    LaunchedEffect(parked) { if (!parked) { changing = false; pendingChange = null } }
     var typed by rememberSaveable { mutableStateOf("") }
     var style by remember { mutableStateOf(DriveStyle.SMOOTH) }
 
@@ -69,7 +79,17 @@ fun PetScreen(vm: PetViewModel) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            RoomScene(
+            if (showPicker) {
+                SpeciesPicker(
+                    initial = if (needsPicker) null else species,
+                    onConfirm = {
+                        if (needsPicker) vm.chooseSpecies(it.id)
+                        else if (it == species) changing = false else pendingChange = it
+                    },
+                    onClose = if (needsPicker) null else ({ changing = false }),
+                    modifier = Modifier.widthIn(max = 460.dp).fillMaxWidth(),
+                )
+            } else RoomScene(
                 face, species, line, food, health, parked, vm::petIt, vm::talk,
                 Modifier.widthIn(max = if (landscape) 720.dp else 480.dp).fillMaxWidth().height(roomHeight),
                 mood = pet.mood,
@@ -83,7 +103,7 @@ fun PetScreen(vm: PetViewModel) {
                 Switch(checked = parked, onCheckedChange = vm::setParked)
             }
             // ponytail: dev panel (fake signals) — remove before building against real signals.
-            if (parked) {
+            if (parked && !showPicker) {
                 Column(
                     Modifier.widthIn(max = 480.dp).fillMaxWidth()
                         .background(Color(0xFFFFF7E8), RoundedCornerShape(22.dp))
@@ -92,6 +112,11 @@ fun PetScreen(vm: PetViewModel) {
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Text("개발자 도구 · 기분 ${pet.mood}", color = Line, style = MaterialTheme.typography.labelMedium)
+                    // ponytail: 설정 대화상자가 생기면(LLM 계획) 그쪽으로 옮긴다
+                    Button(
+                        onClick = { changing = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = Line, contentColor = Cream),
+                    ) { Text("친구 바꾸기") }
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Preset.entries.forEach { p ->
                             FilterChip(selected = false, onClick = { vm.applyPreset(p) }, label = { Text(p.name) })
@@ -155,6 +180,23 @@ fun PetScreen(vm: PetViewModel) {
                 }
             }
         }
+    }
+    pendingChange?.let { next ->
+        AlertDialog(
+            onDismissRequest = { pendingChange = null },
+            containerColor = Color(0xFFFFF7E8),
+            titleContentColor = Line,
+            textContentColor = Line,
+            shape = RoundedCornerShape(22.dp),
+            title = { Text("친구를 바꿀까요?", fontWeight = FontWeight.Bold) },
+            text = { Text("기분이 처음부터 다시 시작돼요") },
+            confirmButton = {
+                TextButton(colors = ButtonDefaults.textButtonColors(contentColor = Line), onClick = { vm.changeSpecies(next.id); pendingChange = null; changing = false }) { Text("바꾸기") }
+            },
+            dismissButton = {
+                TextButton(colors = ButtonDefaults.textButtonColors(contentColor = Line), onClick = { pendingChange = null }) { Text("취소") }
+            },
+        )
     }
 }
 

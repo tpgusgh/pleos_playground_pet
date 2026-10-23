@@ -47,8 +47,8 @@ private val FloorFill = Color(0xFFF1CF9F)
 private val FloorPlank = Color(0xFFE8C08C)
 private val SkyFill = Color(0xFFD9EFFF)
 private val RugFill = Color(0xFFFFD0DC)
-private val Yellow = Color(0xFFFFE8A3)
-private val Pink = Color(0xFFFFC9D6)
+internal val Yellow = Color(0xFFFFE8A3)
+internal val Pink = Color(0xFFFFC9D6)
 private val HeartOn = Color(0xFFFF8FA8)
 private val HeartOff = Color(0xFFE8D5D0)
 private val BubbleBreak = LineBreak(LineBreak.Strategy.Balanced, LineBreak.Strictness.Strict, LineBreak.WordBreak.Phrase)
@@ -184,7 +184,7 @@ private fun SignRow(emoji: String, label: String, value: Int?) {
 }
 
 @Composable
-private fun PillButton(label: String, fill: Color, onClick: () -> Unit) {
+internal fun PillButton(label: String, fill: Color, onClick: () -> Unit) {
     val shape = RoundedCornerShape(24.dp)
     Box(
         Modifier
