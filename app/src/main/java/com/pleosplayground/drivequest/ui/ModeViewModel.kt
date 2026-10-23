@@ -35,7 +35,7 @@ class ModeViewModel(private val store: ModeRepository) : ViewModel() {
             read.join()
             if (_mode.value != mode) petViewModels.clear()
             _mode.value = mode
-            // ponytail: mode save failure is ignored, the next launch may show the start screen again
+            // ponytail: 모드 저장 실패는 무시, 다음 실행에 시작 화면(지우기 실패면 이전 모드)이 다시 뜰 수 있다
             try { store.saveMode(mode) } catch (e: IOException) {}
         }
     }
@@ -45,7 +45,7 @@ class ModeViewModel(private val store: ModeRepository) : ViewModel() {
             read.join()
             petViewModels.clear()
             _mode.value = null
-            // ponytail: mode clear failure is ignored, the next launch may restore the previous mode
+            // ponytail: 모드 저장 실패는 무시, 다음 실행에 시작 화면(지우기 실패면 이전 모드)이 다시 뜰 수 있다
             try { store.clearMode() } catch (e: IOException) {}
         }
     }
