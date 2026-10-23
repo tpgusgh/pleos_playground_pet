@@ -39,6 +39,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
+import com.pleosplayground.drivequest.core.EarStyle
 import com.pleosplayground.drivequest.core.Face
 import com.pleosplayground.drivequest.core.Species
 import com.pleosplayground.drivequest.core.petDescription
@@ -119,6 +120,7 @@ private class CarStyle(species: Species) {
     val shade = Color(species.shade)
     val ear = Color(species.ear)
     val inner = Color(species.inner)
+    val ears = species.ears
 }
 
 @Composable
@@ -210,7 +212,40 @@ private class CarPaths {
     val squiggle = Path().apply {
         moveTo(0f, 0f); quadraticTo(3f, -3.5f, 6f, 0f); quadraticTo(9f, 3.5f, 12f, 0f)
     }
+    // Species ears, drawn as the RIGHT ear (px = 140); the left one is the same path mirrored about x = 100.
+    // Each outer edge curves back into the cabin so no sharp base corner pokes out beside the roof.
+    // Sides bow outward a little so the part above the roof reads as a full, soft ear rather than a thin horn.
+    val catEar = Path().apply {
+        moveTo(121f, 58f); quadraticTo(127f, 30f, 142.8f, 22.6f); quadraticTo(146f, 19f, 147.6f, 24f)
+        quadraticTo(153.5f, 36f, 155f, 52f); quadraticTo(155.5f, 58f, 148f, 60f); close()
+    }
+    val catInner = Path().apply {
+        moveTo(130f, 54f); quadraticTo(132f, 35f, 142.8f, 29.5f); quadraticTo(145.6f, 27.5f, 146.6f, 30.6f)
+        quadraticTo(150f, 41f, 151f, 54f); close()
+    }
+    val foxEar = Path().apply {
+        moveTo(122f, 58f); quadraticTo(128f, 26f, 144f, 15.4f); quadraticTo(146f, 11f, 147.2f, 15.8f)
+        quadraticTo(152f, 32f, 154f, 52f); quadraticTo(154.5f, 58f, 148f, 60f); close()
+    }
+    val foxInner = Path().apply {
+        moveTo(131f, 56f); quadraticTo(134f, 39f, 144.2f, 31f); quadraticTo(148.5f, 42f, 150.5f, 56f); close()
+    }
+    // dark tip: the top ~35% of the fox ear, with a soft dip in the middle; clipped to the ear
+    val foxTip = Path().apply {
+        moveTo(118f, 0f); lineTo(172f, 0f); lineTo(172f, 25f); quadraticTo(145f, 33f, 118f, 25f); close()
+    }
+    // floppy dog ear hanging from DogPivot: narrow top, round bottom, 22 x 46
+    val dogEar = Path().apply {
+        moveTo(149f, 44f); cubicTo(144f, 52f, 142f, 66f, 143f, 78f); cubicTo(144f, 94f, 164f, 94f, 165f, 78f)
+        cubicTo(166f, 66f, 164f, 52f, 159f, 44f); quadraticTo(154f, 41f, 149f, 44f); close()
+    }
+    val feathers = FeatherH.map { drop(TuftRoot.x, TuftRoot.y - it, it) }
 }
+
+private val DogPivot = Offset(154f, 44f)
+private val TuftRoot = Offset(86f, 40f)
+private val FeatherH = floatArrayOf(18f, 15f, 12f)
+private val FeatherTilt = floatArrayOf(-25f, -5f, 15f)
 
 private fun heart(cx: Float, cy: Float, w: Float) = Path().apply {
     val h = w * 0.9f
@@ -255,8 +290,17 @@ private fun DrawScope.drawCar(p: CarPaths, s: CarStyle, face: Face, ms: Long, ea
         scale(1f - 0.008f * breath, 1f + 0.012f * breath, Offset(100f, 170f))
     }) {
         val sway = 2.2f * (wave(ms, 2000) - 0.5f)
-        mirrorEar(s, 60f, -(ear + sway))
-        mirrorEar(s, 140f, ear + sway + earTwitch(ms))
+        when (s.ears) {
+            EarStyle.BUNNY -> {
+                mirrorEar(s, 60f, -(ear + sway))
+                mirrorEar(s, 140f, ear + sway + earTwitch(ms))
+            }
+            EarStyle.DUCK -> duckTuft(p, s, sway)
+            else -> {
+                scale(-1f, 1f, Offset(100f, 0f)) { sideEar(p, s, ear, sway) }
+                sideEar(p, s, ear, sway + earTwitch(ms))
+            }
+        }
         antenna(p, 3f * (wave(ms, 2000, 1f) - 0.5f) + earTwitch(ms + 700) * 0.6f)
         bodyShell(p, s)
         windshield(p)
@@ -273,6 +317,53 @@ private fun DrawScope.mirrorEar(s: CarStyle, px: Float, deg: Float) = rotate(deg
     drawLine(White.copy(alpha = 0.85f), Offset(px - 3f, 17f), Offset(px - 3f, 25f), 2.6f, StrokeCap.Round)
     drawOval(Line, Offset(px - 8f, 11f), Size(16f, 36f), style = Fine)
     drawOval(Line, Offset(px - 14f, 4f), Size(28f, 56f), style = Outline)
+}
+
+/** Right-hand ear for the non-bunny species; [extra] is sway (+ twitch). Positive angles tip it outward. */
+private fun DrawScope.sideEar(p: CarPaths, s: CarStyle, ear: Float, extra: Float) {
+    when (s.ears) {
+        // cat 0.4 / fox 0.46 (sulky ~47° / ~54°): enough to lift the right tip out from under the sulky rain cloud
+        EarStyle.CAT -> rotate(0.4f * ear + extra, Offset(140f, 56f)) {
+            drawPath(p.catEar, s.ear)
+            drawPath(p.catInner, s.inner)
+            drawPath(p.catInner, Line, style = Fine)
+            drawPath(p.catEar, Line, style = Outline)
+        }
+        EarStyle.FOX -> rotate(0.46f * ear + extra, Offset(140f, 56f)) {
+            drawPath(p.foxEar, s.ear)
+            clipPath(p.foxEar) { drawPath(p.foxTip, s.inner) }
+            drawPath(p.foxInner, Cream)
+            drawPath(p.foxInner, Line, style = Fine)
+            drawPath(p.foxEar, Line, style = Outline)
+        }
+        EarStyle.BEAR -> rotate(0.1f * ear + extra, Offset(140f, 58f)) {
+            val c = Offset(144f, 45f) // 3 lower than the table so the sulky ear clears the rain cloud
+            drawCircle(s.ear, 13f, c)
+            drawCircle(s.inner, 7f, c)
+            drawCircle(Line, 7f, c, style = Fine)
+            drawCircle(Line, 13f, c, style = Outline)
+        }
+        EarStyle.DOG -> {
+            // hangs when sulky, flaps up and out when happy. The hanging pose leans 15° out so the ear lies
+            // beside the cabin instead of hiding behind it; the lift is 30° so happy ears stop at 45° (not wing-flat)
+            val perk = ((118f - ear) / 108f).coerceIn(0f, 1f)
+            rotate(-15f - 30f * perk + extra, DogPivot) {
+                drawPath(p.dogEar, s.ear)
+                drawPath(p.dogEar, Line, style = Outline)
+            }
+        }
+        else -> Unit
+    }
+}
+
+/** Duck: three little head feathers on the left of the roof, swaying gently. */
+private fun DrawScope.duckTuft(p: CarPaths, s: CarStyle, sway: Float) {
+    for (i in p.feathers.indices) {
+        rotate(FeatherTilt[i] + 2f * sway, TuftRoot) {
+            drawPath(p.feathers[i], s.ear)
+            drawPath(p.feathers[i], Line, style = Detail)
+        }
+    }
 }
 
 private fun DrawScope.antenna(p: CarPaths, deg: Float) = rotate(deg, Offset(100f, 40f)) {
