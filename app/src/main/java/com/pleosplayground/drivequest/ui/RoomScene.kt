@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pleosplayground.drivequest.core.Face
+import com.pleosplayground.drivequest.core.Species
 
 // Palette from the "B. 포근한 내 방" mockup.
 internal val Line = Color(0xFF6B5648)
@@ -59,7 +60,7 @@ fun heartsFor(value: Int?): Int? = value?.let { (it.coerceIn(0, 100) + 24) / 25 
 /** A cozy room: wall, window, floor, rug, the pet sitting on it, a speech bubble, a heart sign and pill buttons. */
 @Composable
 fun RoomScene(
-    face: Face, line: String?,
+    face: Face, species: Species, line: String?,
     food: Int?, health: Int?,
     parked: Boolean,
     onPet: () -> Unit, onTalk: () -> Unit,
@@ -79,7 +80,7 @@ fun RoomScene(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Bubble(line, bubbleMax)
-            PetFace(face, Modifier.height(petH))
+            PetFace(face, species, Modifier.height(petH))
         }
         if (parked) {
             Column(

@@ -46,6 +46,7 @@ import com.pleosplayground.drivequest.core.canPlay
 @Composable
 fun PetScreen(vm: PetViewModel) {
     val face by vm.face.collectAsState()
+    val species by vm.species.collectAsState()
     val ux by vm.ux.collectAsState()
     val line by vm.line.collectAsState()
     val food by vm.food.collectAsState()
@@ -69,7 +70,7 @@ fun PetScreen(vm: PetViewModel) {
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             RoomScene(
-                face, line, food, health, parked, vm::petIt, vm::talk,
+                face, species, line, food, health, parked, vm::petIt, vm::talk,
                 Modifier.widthIn(max = if (landscape) 720.dp else 480.dp).fillMaxWidth().height(roomHeight),
                 mood = pet.mood,
             )

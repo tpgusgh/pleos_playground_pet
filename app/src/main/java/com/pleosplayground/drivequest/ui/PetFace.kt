@@ -40,6 +40,8 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import com.pleosplayground.drivequest.core.Face
+import com.pleosplayground.drivequest.core.Species
+import com.pleosplayground.drivequest.core.petDescription
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
@@ -85,13 +87,9 @@ private fun wave(ms: Long, periodMs: Int, phase: Float = 0f): Float =
 
 private const val DW = 240f
 private const val DH = 200f
-private val Mint = Color(0xFFBFEEDD)
-private val MintShade = Color(0xFF9EDCC5)
-private val EarFill = Color(0xFFA8E3CC)
 private val Cream = Color(0xFFFFF6E2)
 private val GlassTop = Color(0xFFE4F4FF)
 private val GlassLow = Color(0xFFB8DDF7)
-private val PinkGlass = Color(0xFFFFC9D6)
 private val Cheek = Color(0xFFFFB3C6)
 private val MouthFill = Color(0xFFE8798F)
 private val Tongue = Color(0xFFFFB5C3)
@@ -115,13 +113,18 @@ private val RainX = floatArrayOf(140f, 161f)
 private val RumbleY = floatArrayOf(124f, 136f)
 private val GlassBrush = Brush.verticalGradient(listOf(GlassTop, GlassLow), startY = 47f, endY = 86f)
 
+/** The species' four colors as Compose colors (the rest of the palette is shared by every species). */
+private class CarStyle(species: Species) {
+    val body = Color(species.body)
+    val shade = Color(species.shade)
+    val ear = Color(species.ear)
+    val inner = Color(species.inner)
+}
+
 @Composable
-fun PetFace(face: Face, modifier: Modifier = Modifier) {
-    val desc = when (face) {
-        Face.HAPPY -> "행복한 차 캐릭터"
-        Face.SULKY -> "시무룩한 차 캐릭터"
-        Face.HUNGRY -> "배고픈 차 캐릭터"
-    }
+fun PetFace(face: Face, species: Species, modifier: Modifier = Modifier) {
+    val desc = petDescription(face, species)
+    val style = remember(species) { CarStyle(species) }
     // One linear clock drives breathing, blinking, twitches and effects; values are read in the draw phase only.
     val clock = rememberInfiniteTransition(label = "pet").animateFloat(
         0f, LoopMs.toFloat(), infiniteRepeatable(tween(LoopMs, easing = LinearEasing)), label = "clock",
@@ -150,7 +153,7 @@ fun PetFace(face: Face, modifier: Modifier = Modifier) {
         scale(size.width / DW, pivot = Offset.Zero) {
             translate(20f, 0f) {
                 val ms = clock.value.toLong()
-                drawCar(p, face, ms, ear.value, brow.value, blush.value)
+                drawCar(p, style, face, ms, ear.value, brow.value, blush.value)
                 drawEffects(p, rumble, ms, happyFx.value, sulkyFx.value, hungryFx.value)
             }
         }
@@ -240,7 +243,7 @@ private fun sparkle(c: Offset, r: Float) = Path().apply {
 
 // ---- drawing ------------------------------------------------------------------------------------
 
-private fun DrawScope.drawCar(p: CarPaths, face: Face, ms: Long, ear: Float, brow: Float, blush: Float) {
+private fun DrawScope.drawCar(p: CarPaths, s: CarStyle, face: Face, ms: Long, ear: Float, brow: Float, blush: Float) {
     val breath = wave(ms, 2500)
     // ground shadow on the rug: shrinks a touch as the body rises
     val sw = 140f * (1f - 0.05f * breath)
@@ -252,10 +255,10 @@ private fun DrawScope.drawCar(p: CarPaths, face: Face, ms: Long, ear: Float, bro
         scale(1f - 0.008f * breath, 1f + 0.012f * breath, Offset(100f, 170f))
     }) {
         val sway = 2.2f * (wave(ms, 2000) - 0.5f)
-        mirrorEar(60f, -(ear + sway))
-        mirrorEar(140f, ear + sway + earTwitch(ms))
+        mirrorEar(s, 60f, -(ear + sway))
+        mirrorEar(s, 140f, ear + sway + earTwitch(ms))
         antenna(p, 3f * (wave(ms, 2000, 1f) - 0.5f) + earTwitch(ms + 700) * 0.6f)
-        bodyShell(p)
+        bodyShell(p, s)
         windshield(p)
         face(p, face, ms, brow, blush, breath)
         frontDetails(p)
@@ -264,9 +267,9 @@ private fun DrawScope.drawCar(p: CarPaths, face: Face, ms: Long, ear: Float, bro
     wheel(156f, 170f, 4f * (breath - 0.5f))
 }
 
-private fun DrawScope.mirrorEar(px: Float, deg: Float) = rotate(deg, Offset(px, 58f)) {
-    drawOval(EarFill, Offset(px - 14f, 4f), Size(28f, 56f))
-    drawOval(PinkGlass, Offset(px - 8f, 11f), Size(16f, 36f))
+private fun DrawScope.mirrorEar(s: CarStyle, px: Float, deg: Float) = rotate(deg, Offset(px, 58f)) {
+    drawOval(s.ear, Offset(px - 14f, 4f), Size(28f, 56f))
+    drawOval(s.inner, Offset(px - 8f, 11f), Size(16f, 36f))
     drawLine(White.copy(alpha = 0.85f), Offset(px - 3f, 17f), Offset(px - 3f, 25f), 2.6f, StrokeCap.Round)
     drawOval(Line, Offset(px - 8f, 11f), Size(16f, 36f), style = Fine)
     drawOval(Line, Offset(px - 14f, 4f), Size(28f, 56f), style = Outline)
@@ -280,11 +283,11 @@ private fun DrawScope.antenna(p: CarPaths, deg: Float) = rotate(deg, Offset(100f
     }
 }
 
-private fun DrawScope.bodyShell(p: CarPaths) {
-    drawPath(p.body, Mint)
+private fun DrawScope.bodyShell(p: CarPaths, s: CarStyle) {
+    drawPath(p.body, s.body)
     clipPath(p.body) {
-        drawRect(MintShade.copy(alpha = 0.7f), Offset(0f, 152f), Size(200f, 24f))
-        drawOval(MintShade.copy(alpha = 0.35f), Offset(166f, 70f), Size(44f, 110f))
+        drawRect(s.shade.copy(alpha = 0.7f), Offset(0f, 152f), Size(200f, 24f))
+        drawOval(s.shade.copy(alpha = 0.35f), Offset(166f, 70f), Size(44f, 110f))
         // light from the top left: a soft arc on the roof and one on the shoulder
         drawArc(White.copy(alpha = 0.7f), 200f, 50f, false, Offset(52f, 42f), Size(60f, 60f), style = Highlight)
         drawArc(White.copy(alpha = 0.6f), 195f, 40f, false, Offset(22f, 86f), Size(60f, 60f), style = Highlight)
