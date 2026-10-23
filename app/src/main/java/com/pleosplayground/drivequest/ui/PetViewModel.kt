@@ -2,22 +2,32 @@ package com.pleosplayground.drivequest.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.pleosplayground.drivequest.core.ALERT_GAP_MS
+import com.pleosplayground.drivequest.core.AlertState
 import com.pleosplayground.drivequest.core.DriveStyle
 import com.pleosplayground.drivequest.core.Face
 import com.pleosplayground.drivequest.core.FakeSignalSource
 import com.pleosplayground.drivequest.core.PetState
 import com.pleosplayground.drivequest.core.Preset
+import com.pleosplayground.drivequest.core.TripInfo
 import com.pleosplayground.drivequest.core.UxState
+import com.pleosplayground.drivequest.core.alertLine
+import com.pleosplayground.drivequest.core.answerFor
 import com.pleosplayground.drivequest.core.applyDriving
 import com.pleosplayground.drivequest.core.canPlay
+import com.pleosplayground.drivequest.core.classifyQuestion
+import com.pleosplayground.drivequest.core.decideAlert
 import com.pleosplayground.drivequest.core.driveStartLine
 import com.pleosplayground.drivequest.core.faceFor
 import com.pleosplayground.drivequest.core.food
 import com.pleosplayground.drivequest.core.health
 import com.pleosplayground.drivequest.core.moodDelta
+import com.pleosplayground.drivequest.core.notUnderstoodLine
 import com.pleosplayground.drivequest.core.pet
 import com.pleosplayground.drivequest.core.settle
+import com.pleosplayground.drivequest.core.spoke
 import com.pleosplayground.drivequest.core.talk
+import com.pleosplayground.drivequest.core.tripInfo
 import com.pleosplayground.drivequest.data.PetRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -49,6 +59,12 @@ class PetViewModel(
     private val _line = MutableStateFlow<String?>(null)
     val line: StateFlow<String?> = _line.asStateFlow()
 
+    private val _trip = MutableStateFlow(tripInfo(source.state.value))
+    val trip: StateFlow<TripInfo> = _trip.asStateFlow()
+    private val _proactive = MutableStateFlow(true)
+    val proactiveEnabled: StateFlow<Boolean> = _proactive.asStateFlow()
+    private var alertState = AlertState()
+
     private var lastGreetMs: Long? = null
 
     // A failed load keeps the default pet. Actions join this so a slow load cannot overwrite saved progress.
@@ -64,6 +80,8 @@ class PetViewModel(
             source.state.collect { s ->
                 _food.value = food(s)
                 _health.value = health(s)
+                _trip.value = tripInfo(s)
+                checkAlert()
                 val d = moodDelta(s)
                 if (d != 0) {
                     _pet.value = _pet.value.applyDriving(d, clock())
@@ -96,11 +114,21 @@ class PetViewModel(
 
     private fun currentFace() = faceFor(_food.value, _health.value, _pet.value.mood)
 
+    // ponytail: no "stay quiet while the user is talking" rule yet; the LLM plan adds it.
+    // A blocked alert stays armed and is retried on the next state emission or setProactive(true).
+    private fun checkAlert() {
+        val d = decideAlert(alertState, _trip.value, clock(), _proactive.value)
+        alertState = d.state
+        d.alert?.let { say(alertLine(it)) }
+    }
+
     private fun greetDriveStart() {
         val now = clock()
         val last = lastGreetMs
-        if (last == null || now - last >= GREET_GAP_MS) {
+        val alertLast = alertState.lastSpokeMs
+        if ((last == null || now - last >= GREET_GAP_MS) && (alertLast == null || now - alertLast >= ALERT_GAP_MS)) {
             lastGreetMs = now
+            alertState = alertState.spoke(now)
             say(driveStartLine(currentFace()))
         }
     }
@@ -129,6 +157,25 @@ class PetViewModel(
         }
         r.reply?.let(::say)
     }
+
+    fun ask(text: String) = act {
+        val r = _pet.value.talk(clock(), currentFace())
+        if (r.reply == null) return@act // same cooldown/mood gate as talk(); the canned reply is discarded
+        if (r.state != _pet.value) {
+            _pet.value = r.state
+            persist()
+        }
+        val q = classifyQuestion(text)
+        say(if (q != null) answerFor(q, _trip.value) else notUnderstoodLine(currentFace()))
+    }
+
+    fun setProactive(enabled: Boolean) = act {
+        _proactive.value = enabled
+        if (enabled) checkAlert()
+    }
+
+    fun setTrip(rangeKm: Float?, destinationName: String?, distanceKm: Float?, etaMinutes: Int?) =
+        act { source.setTrip(rangeKm, destinationName, distanceKm, etaMinutes) }
 
     fun setParked(parked: Boolean) = act { source.setUx(if (parked) UxState.PARKED else UxState.RESTRICTED) }
 

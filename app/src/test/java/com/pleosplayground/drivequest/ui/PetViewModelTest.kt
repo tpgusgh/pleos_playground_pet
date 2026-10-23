@@ -7,7 +7,6 @@ import com.pleosplayground.drivequest.core.PetState
 import com.pleosplayground.drivequest.core.Preset
 import com.pleosplayground.drivequest.core.driveStartLine
 import com.pleosplayground.drivequest.core.greeting
-import com.pleosplayground.drivequest.data.PetRepository
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -23,33 +22,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import java.io.IOException
-
-private class FakeRepo(
-    private val initial: PetState = PetState(),
-    private val failSave: Boolean = false,
-    private val failLoad: Boolean = false,
-    private val gate: CompletableDeferred<Unit>? = null,
-) : PetRepository {
-    val saved = mutableListOf<PetState>()
-
-    override suspend fun load(): PetState {
-        gate?.await()
-        if (failLoad) throw IOException("load")
-        return initial
-    }
-
-    override suspend fun save(state: PetState) {
-        saved += state
-        if (failSave) throw IOException("save")
-    }
-}
-
-private class FakeNarrator : Narrator {
-    val lines = mutableListOf<String>()
-    override fun speak(text: String) { lines += text }
-    override fun shutdown() {}
-}
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PetViewModelTest {
