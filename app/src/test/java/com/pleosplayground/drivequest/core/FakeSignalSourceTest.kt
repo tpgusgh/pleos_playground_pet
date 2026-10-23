@@ -149,4 +149,27 @@ class FakeSignalSourceTest {
         source.setTrip(null, null, null, null)
         assertEquals(listOf<Any?>(null, null, null, null), trip(source.state.value))
     }
+
+    @Test
+    fun connection_is_always_connected() {
+        val source = FakeSignalSource()
+        assertEquals(ConnectionState.CONNECTED, source.connection.value)
+        source.setUx(UxState.PARKED)
+        source.applyPreset(Preset.UNSUPPORTED)
+        assertEquals(ConnectionState.CONNECTED, source.connection.value)
+    }
+
+    @Test
+    fun fake_is_the_dev_controls() {
+        val source = FakeSignalSource()
+        val dev: DevControls = source
+        dev.setUx(UxState.PARKED)
+        assertEquals(UxState.PARKED, source.ux.value)
+        dev.setFuel(10)
+        assertEquals(10, source.state.value.fuelPercent)
+        dev.setTrip(50f, "회사", 20f, 25)
+        assertEquals(TripInfo(50f, "회사", 20f, 25), tripInfo(source.state.value))
+        dev.applyPreset(Preset.UNSUPPORTED)
+        assertNull(source.state.value.fuelPercent)
+    }
 }

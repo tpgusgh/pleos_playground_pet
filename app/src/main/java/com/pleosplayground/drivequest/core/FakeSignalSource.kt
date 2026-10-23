@@ -8,24 +8,34 @@ import kotlinx.coroutines.yield
 enum class Preset { HEALTHY, LOW_FUEL, NEEDS_CARE, UNSUPPORTED, LONG_TRIP, RUNNING_OUT }
 enum class DriveStyle { SMOOTH, HARSH }
 
-class FakeSignalSource(private val tickDelayMs: Long = 0) : VehicleSignalSource {
+interface DevControls {
+    fun setUx(state: UxState)
+    fun setFuel(percent: Int?)
+    fun applyPreset(preset: Preset)
+    suspend fun drive(style: DriveStyle)
+    fun setTrip(rangeKm: Float?, destinationName: String?, distanceKm: Float?, etaMinutes: Int?)
+}
+
+class FakeSignalSource(private val tickDelayMs: Long = 0) : VehicleSignalSource, DevControls {
     private val _ux = MutableStateFlow(UxState.RESTRICTED)
     override val ux: StateFlow<UxState> = _ux
 
     private val _state = MutableStateFlow(presetSample(Preset.HEALTHY))
     override val state: StateFlow<Sample> = _state
 
+    override val connection: StateFlow<ConnectionState> = MutableStateFlow(ConnectionState.CONNECTED)
+
     private var clock = 0L
 
-    fun setUx(state: UxState) {
+    override fun setUx(state: UxState) {
         _ux.value = state
     }
 
-    fun setFuel(percent: Int?) {
+    override fun setFuel(percent: Int?) {
         _state.value = _state.value.copy(fuelPercent = percent)
     }
 
-    fun setTrip(rangeKm: Float?, destinationName: String?, distanceKm: Float?, etaMinutes: Int?) {
+    override fun setTrip(rangeKm: Float?, destinationName: String?, distanceKm: Float?, etaMinutes: Int?) {
         _state.value = _state.value.copy(
             rangeKm = rangeKm, destinationName = destinationName,
             distanceToDestinationKm = distanceKm, etaMinutes = etaMinutes,
@@ -33,11 +43,11 @@ class FakeSignalSource(private val tickDelayMs: Long = 0) : VehicleSignalSource 
     }
 
     /** Replaces the static items only; brake/steer go back to null, ux is kept. */
-    fun applyPreset(preset: Preset) {
+    override fun applyPreset(preset: Preset) {
         _state.value = presetSample(preset).copy(tMs = _state.value.tMs)
     }
 
-    suspend fun drive(style: DriveStyle) {
+    override suspend fun drive(style: DriveStyle) {
         for (i in 0 until TICKS) {
             val (brake, steer) = when (style) {
                 DriveStyle.SMOOTH -> (if (i % 4 == 3) 2.0f else null) to 20f
